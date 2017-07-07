@@ -7,10 +7,13 @@ Project Site: [https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 PowerShell Advanced ADSI Module
 
 ## Why use the PSAD Module?
-<< Fill this out >>
+This module was written to be blazingly fast, allow remote domain (alternate credential) use across all functions, and serve as a discovery/learning tool for LDAP filters. If that appeals to you then this module might server you well.
 
 ### Features
-<< Fill this out >>
+- Ability to use alternate credentials within the same forest (or targeting a different forest)
+- Very easy to expand upon
+- Few 'translated' fields (so you are forced to become more familiar with actual LDAP properties)
+- Simple but useful helper functions are included for thing like getting the tombstone lifetime, forest functional levels, OCS/Lync/Skype topologies, and Exchange servers/versions.
 
 ## Installation
 PSAD is available on the [PowerShell Gallery](https://www.powershellgallery.com/packages/PSAD/).

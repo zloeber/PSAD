@@ -4,7 +4,10 @@ copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/m
 theme: readthedocs
 site_name: PSAD Docs
 Pages:
+  Index: Index.md
+  Contributing: Contributing.md
   ChangeLog: ChangeLog.md
+  Acknowledgements: Acknowledgements.md
   Functions:
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
@@ -34,20 +37,19 @@ Pages:
   - Get-DSGroupMember: Functions\Get-DSGroupMember.md
   - Get-DSGUIDMap: Functions\Get-DSGUIDMap.md
   - Get-DSLastLDAPFilter: Functions\Get-DSLastLDAPFilter.md
+  - Get-DSLastSearchSetting: Functions\Get-DSLastSearchSetting.md
   - Get-DSObject: Functions\Get-DSObject.md
   - Get-DSOCSSchemaVersion: Functions\Get-DSOCSSchemaVersion.md
   - Get-DSOCSTopology: Functions\Get-DSOCSTopology.md
+  - Get-DSOptionalFeatures: Functions\Get-DSOptionalFeatures.md
   - Get-DSPageSize: Functions\Get-DSPageSize.md
   - Get-DSSCCMServer: Functions\Get-DSSCCMServer.md
   - Get-DSSchema: Functions\Get-DSSchema.md
+  - Get-DSTombstoneLifetime: Functions\Get-DSTombstoneLifetime.md
   - Get-DSUser: Functions\Get-DSUser.md
   - Move-DSObject: Functions\Move-DSObject.md
   - Set-DSObject: Functions\Set-DSObject.md
   - Set-DSPageSize: Functions\Set-DSPageSize.md
   - Test-DSObjectPath: Functions\Test-DSObjectPath.md
-  Acknowledgements: Acknowledgements.md
-  Contributing: Contributing.md
-  ReleaseNotes: ReleaseNotes.md
-  Index: Index.md
 repo_url: https://github.com/zloeber/PSAD
 
