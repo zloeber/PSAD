@@ -4,10 +4,11 @@ copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/m
 theme: readthedocs
 site_name: PSAD Docs
 Pages:
-  Index: Index.md
-  Contributing: Contributing.md
-  ChangeLog: ChangeLog.md
+  ReleaseNotes: ReleaseNotes.md
   Acknowledgements: Acknowledgements.md
+  Contributing: Contributing.md
+  Home: Index.md
+  ChangeLog: ChangeLog.md
   Functions:
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
