@@ -7,13 +7,16 @@ Pages:
   ReleaseNotes: ReleaseNotes.md
   Acknowledgements: Acknowledgements.md
   Contributing: Contributing.md
-  Home: Index.md
   ChangeLog: ChangeLog.md
+  index: index.md
   Functions:
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
   - Convert-DSUACProperty: Functions\Convert-DSUACProperty.md
+  - Disable-DSObject: Functions\Disable-DSObject.md
+  - Enable-DSObject: Functions\Enable-DSObject.md
   - Format-DSSearchFilterValue: Functions\Format-DSSearchFilterValue.md
+  - Get-CredentialState: Functions\Get-CredentialState.md
   - Get-DistinguishedNameFromFQDN: Functions\Get-DistinguishedNameFromFQDN.md
   - Get-DSADSchemaVersion: Functions\Get-DSADSchemaVersion.md
   - Get-DSADSite: Functions\Get-DSADSite.md

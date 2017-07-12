@@ -1,21 +1,21 @@
 ﻿function Get-DSExchangeServer {
     <#
     .SYNOPSIS
-        Retreives Exchange servers from active directory.
+    Retreives Exchange servers from active directory.
     .DESCRIPTION
-        Retreives Exchange servers from active directory.
+    Retreives Exchange servers from active directory.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSExchangeServer
+    PS> Get-DSExchangeServer
 
-        Returns Exchange servers found in the current forest.
+    Returns Exchange servers found in the current forest.
     .NOTES
-        TBD
+    Author: Zachary Loeber
     .LINK
-        TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(
@@ -63,15 +63,15 @@
         $ConfigNamingContext = (Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams).configurationNamingContext
         $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
     }
-    
+
     end {
         if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
 
             $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
-            
+
             ForEach ($ExchOrg in $ExchOrgs) {
                 $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
-                
+
                 # Get all found Exchange server information
                 ForEach ($ExchServer in $ExchServers) {
                     $AdminGroup = Get-ADPathName $ExchServer.adspath -GetElement 2 -ValuesOnly

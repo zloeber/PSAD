@@ -1,21 +1,21 @@
 ﻿function Get-DSOCSTopology {
     <#
     .SYNOPSIS
-        Retreives the OCS/Skype/Lync information from active directory.
+    Retreives the OCS/Skype/Lync information from active directory.
     .DESCRIPTION
-        Retreives the OCS/Skype/Lync information from active directory.
+    Retreives the OCS/Skype/Lync information from active directory.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSOCSTopology
+    PS> Get-DSOCSTopology
 
-        Returns the OCS/Skype/Lync version found in the current forest and the partition that the version was found in along with any identifiable servers that were found in AD.
+    Returns the OCS/Skype/Lync version found in the current forest and the partition that the version was found in along with any identifiable servers that were found in AD.
     .NOTES
-        TBD
+    Author: Zachary Loeber
     .LINK
-        TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(
@@ -45,7 +45,7 @@
             return
         }
     }
-    
+
     end {
         ForEach ($Config in $OCSConfig) {
             $Version = $Config.Version
@@ -90,7 +90,7 @@
                     FQDN = $_.'msrtcsip-backendserver'
                 }
             }
-            
+
             # All pools
             @(Get-DSObject -Filter 'objectClass=msRTCSIP-Pool' -SearchRoot $ConfigPath -SearchScope:SubTree -Properties 'msrtcsip-pooldisplayname','dnshostname','cn','adspath' @DSParams) | Sort-Object msrtcsip-pooldisplayname | ForEach-Object {
                 New-Object -TypeName psobject -Property @{

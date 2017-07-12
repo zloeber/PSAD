@@ -1,48 +1,48 @@
 ﻿function Get-DSGroupMember {
     <#
     .SYNOPSIS
-        Return all members of a group.
+    Return all members of a group.
     .DESCRIPTION
-        Return all members of a group.
+    Return all members of a group.
     .PARAMETER Identity
-        Name to search for.
+    Name to search for.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .PARAMETER Limit
-        Limits items retrieved. If set to 0 then there is no limit.
+    Limits items retrieved. If set to 0 then there is no limit.
     .PARAMETER PageSize
-        Items returned per page.
+    Items returned per page.
     .PARAMETER SearchRoot
-        Root of search.
+    Root of search.
     .PARAMETER Filter
-        LDAP filter for searches.
+    LDAP filter for searches.
     .PARAMETER Properties
-        Properties to include in output.
+    Properties to include in output.
     .PARAMETER SearchScope
-        Scope of a search as either a base, one-level, or subtree search, default is subtree.
+    Scope of a search as either a base, one-level, or subtree search, default is subtree.
     .PARAMETER SecurityMask
-        Specifies the available options for examining security information of a directory object.
+    Specifies the available options for examining security information of a directory object.
     .PARAMETER TombStone
-        Whether the search should also return deleted objects that match the search filter.
+    Whether the search should also return deleted objects that match the search filter.
     .PARAMETER Raw
-        Skip attempts to convert known property types.
+    Skip attempts to convert known property types.
     .PARAMETER DontJoinAttributeValues
-        Output will automatically join the attributes unless this switch is set.
+    Output will automatically join the attributes unless this switch is set.
     .PARAMETER IncludeAllProperties
-        Include all optional properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    Include all optional properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
     .PARAMETER Recurse
-        Computer was modified after this time
+    Computer was modified after this time
     .PARAMETER UseMatchingRule
-        Use LDAP_MATCHING_RULE_IN_CHAIN in the LDAP search query when -Recurse is specified.
-        Much faster than manual recursion, but doesn't reveal cross-domain groups.
+    Use LDAP_MATCHING_RULE_IN_CHAIN in the LDAP search query when -Recurse is specified.
+    Much faster than manual recursion, but doesn't reveal cross-domain groups.
     .EXAMPLE
-        TBD
-    .NOTES
-        TBD
+    TBD
+    ..NOTES
+    Author: Zachary Loeber
     .LINK
-        TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

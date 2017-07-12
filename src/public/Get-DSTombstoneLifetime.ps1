@@ -12,6 +12,10 @@
     PS> Get-DSTombstoneLifetime
 
     Returns the tombstone lifetime period for the current forest
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

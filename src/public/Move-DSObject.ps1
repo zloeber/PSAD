@@ -1,21 +1,25 @@
 ﻿function Move-DSObject {
     <#
     .SYNOPSIS
-        Move AD objects to another OU.
+    Move AD objects to another OU.
     .DESCRIPTION
-        Move AD objects to another OU.
+    Move AD objects to another OU.
     .PARAMETER Identity
-        Object to move. Accepts DN, GUID, and name formats. 
+    Object to move. Accepts DN, GUID, and name formats.
     .PARAMETER ComputerName
-        Domain controller to use for this move.
+    Domain controller to use for this move.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .PARAMETER Destination
-        Desination OU to move objects into.
+    Desination OU to move objects into.
     .PARAMETER Force
-        Force move to OU without confirmation.
+    Force move to OU without confirmation.
     .EXAMPLE
-        TBD
+    TBD
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding( SupportsShouldProcess=$True, ConfirmImpact='Medium' )]
     param(
@@ -36,11 +40,11 @@
         [Parameter(Position = 3)]
         [Alias('OU','TargetPath')]
         [string]$Destination,
-        
+
         [Parameter(Position = 4, HelpMessage = 'Force move to OU without confirmation.')]
         [Switch]$Force
     )
-    
+
     Begin {
         # Function initialization
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -69,7 +73,7 @@
         $YesToAll = $false
         $NoToAll = $false
     }
-    
+
     Process {
         $Identities += $Identity
     }

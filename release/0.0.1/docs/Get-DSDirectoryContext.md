@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -97,9 +97,9 @@ Accept wildcard characters: False
 ### System.DirectoryService.DirectoryContext
 
 ## NOTES
-None
+Author: Zachary Loeber
 
 ## RELATED LINKS
 
-[NA]()
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

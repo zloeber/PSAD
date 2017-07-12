@@ -36,7 +36,7 @@
 
     $CurrCreds = Split-Credential -Credential $Credential
 
-    if ( $CurrCreds.AltUser -and (-not [string]::IsNullOrEmpty($ComputerName))) {
+    if ( $CurrCreds.AltUser -and (-not [string]::IsNullOrEmpty($ComputerName)) ) {
         return 'AltUserAndServer'
     }
     elseif ($CurrCreds.AltUser) {

@@ -13,9 +13,9 @@
 
     Returns the exchange version found in the current forest.
     .NOTES
-    TBD
+    Author: Zachary Loeber
     .LINK
-    TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

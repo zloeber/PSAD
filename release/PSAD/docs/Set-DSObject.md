@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -13,13 +13,13 @@ Sets properties of an AD object
 
 ### Default (Default)
 ```
-Set-DSObject [-Identity <String[]>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+Set-DSObject [-Identity <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
  [[-Property] <String>] [[-Value] <String>] [-Force] [-WhatIf] [-Confirm]
 ```
 
 ### MultiProperty
 ```
-Set-DSObject [-Identity <String[]>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+Set-DSObject [-Identity <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
  [[-Properties] <Hashtable>] [-Force] [-WhatIf] [-Confirm]
 ```
 
@@ -30,8 +30,13 @@ Sets properties of an AD object
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-TBD
+$PropertiesToSet = @{
 ```
+
+extensionAttribute10 = 'test'
+    extensionAttribute11 = 'test2'
+}
+Set-DSObject -Identity 'webextest' -Properties $PropertiesToSet -Credential (Get-Credential) -Verbose
 
 ## PARAMETERS
 
@@ -40,7 +45,7 @@ Object to update.
 Accepts DN, GUID, and name formats.
 
 ```yaml
-Type: String[]
+Type: String
 Parameter Sets: (All)
 Aliases: Name
 
@@ -48,7 +53,7 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -ComputerName
@@ -127,7 +132,7 @@ Accept wildcard characters: False
 ```
 
 ### -Force
-Force update of the property.
+Force update of the property without prompting.
 
 ```yaml
 Type: SwitchParameter
@@ -177,6 +182,9 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
+Author: Zachary Loeber
 
 ## RELATED LINKS
+
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

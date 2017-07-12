@@ -35,7 +35,7 @@
         AltUser = $true
     }
 
-    
+
     if ($Credential -eq $null) {
         if ((Get-DomainJoinStatus) -eq 'Domain') {
             Write-Verbose "$($FunctionName): No credential passed trying to use the local user instead"

@@ -1,23 +1,23 @@
 ﻿function Get-DSADSiteSubnet {
     <#
     .SYNOPSIS
-        Retreives the AD site information
+    Retreives the AD site information
     .DESCRIPTION
-        Retreives the AD site information
+    Retreives the AD site information
     .PARAMETER Forest
-        Forest name to retreive site from.
+    Forest name to retreive site from.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSADSiteSubnet
+    PS> Get-DSADSiteSubnet
 
-        Returns the site subnets found in the current forest
+    Returns the site subnets found in the current forest
     .NOTES
-        TBD
+    Author: Zachary Loeber
     .LINK
-        TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

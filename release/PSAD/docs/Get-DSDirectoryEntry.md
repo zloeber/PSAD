@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -12,7 +12,7 @@ Get a DirectoryEntry object for a specified distinguished name.
 ## SYNTAX
 
 ```
-Get-DSDirectoryEntry [[-ComputerName] <String>] [[-Credential] <PSCredential>] [[-DistinguishedName] <String>]
+Get-DSDirectoryEntry [[-DistinguishedName] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
  [[-PathType] <String>]
 ```
 
@@ -44,6 +44,21 @@ Get Users group object by known SID
 
 ## PARAMETERS
 
+### -DistinguishedName
+Distinguished Name of AD object we want to get.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: DN
+
+Required: False
+Position: 1
+Default value: None
+Accept pipeline input: True (ByPropertyName, ByValue)
+Accept wildcard characters: False
+```
+
 ### -ComputerName
 Fully Qualified Name of a remote domain controller to connect to.
 
@@ -53,7 +68,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: 1
+Position: 2
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -68,24 +83,9 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 2
+Position: 3
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -DistinguishedName
-Distinguished Name of AD object we want to get.
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: DN
-
-Required: False
-Position: 3
-Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
 Accept wildcard characters: False
 ```
 
@@ -112,9 +112,14 @@ Accept wildcard characters: False
 ### System.DirectoryService.DirectoryEntry
 
 ## NOTES
-Stolen and modified from https://github.com/darkoperator/ADAudit/blob/dev
+Author: Zachary Loeber
+modified from https://github.com/darkoperator/ADAudit/blob/dev
+
+Will only return directoryentry objects and not \[adsi\] accelerated directory entry objects.
+All hidden methods can be seen via psbase (ie.
+($somede.getDirectoryEntry()).psbase | gm)
 
 ## RELATED LINKS
 
-[NA]()
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

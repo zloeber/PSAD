@@ -1,21 +1,21 @@
 ﻿function Get-DSExchangeFederation {
     <#
     .SYNOPSIS
-        Retreives Exchange federations from active directory.
+    Retreives Exchange federations from active directory.
     .DESCRIPTION
-        Retreives Exchange federations from active directory.
+    Retreives Exchange federations from active directory.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSExchangeTopology
+    PS> Get-DSExchangeTopology
 
-        Returns Exchange federations found in the current forest.
+    Returns Exchange federations found in the current forest.
     .NOTES
-        TBD
+    Author: Zachary Loeber
     .LINK
-        TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(
@@ -62,15 +62,15 @@
         $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
         $ExchangeFederations = @()
     }
-    
+
     end {
         if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
 
             $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
-            
+
             ForEach ($ExchOrg in $ExchOrgs) {
                 $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
-                
+
                 # Get all found Exchange federations
                 $ExchangeFeds = @(Get-DSObject -Filter 'objectCategory=msExchFedSharingRelationship' -SearchRoot "LDAP://CN=Federation,$([string]$ExchOrg.distinguishedname)"  -SearchScope:SubTree -Properties $Props_ExchFeds)
                 Foreach ($ExchFed in $ExchangeFeds) {

@@ -15,6 +15,10 @@
     Gets the forest trusts for the domain the host is corrently joined to or that was previously connected to via Connect-DSAD.
     .OUTPUTS
     System.DirectoryServices.ActiveDirectory.ForestTrust
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

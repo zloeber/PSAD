@@ -1,24 +1,26 @@
 ﻿function Get-DSSchema {
     <#
     .SYNOPSIS
-        Get information of the schema for the existing forest.
+    Get information of the schema for the existing forest.
     .DESCRIPTION
-        Get information of the schema for the existing forest.
+    Get information of the schema for the existing forest.
     .PARAMETER ComputerName
-        Fully Qualified Name of a remote domain controller to connect to.
+    Fully Qualified Name of a remote domain controller to connect to.
     .PARAMETER Credential
-        Alternate credentials for retrieving information.
+    Alternate credentials for retrieving information.
     .PARAMETER ForestName
-        Forest to retrieve.
+    Forest to retrieve.
     .PARAMETER UpdateCurrent
-        Update the currently stored connected schema information within the module.
+    Update the currently stored connected schema information within the module.
     .EXAMPLE
-        C:\PS> Get-DSSchema
-        Get information on the current schema for the forest currently connected to. 
+    C:\PS> Get-DSSchema
+    Get information on the current schema for the forest currently connected to.
     .OUTPUTS
-        System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema
+    System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema
     .NOTES
-        TBD
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

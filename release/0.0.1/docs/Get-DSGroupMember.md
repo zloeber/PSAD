@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -26,6 +26,9 @@ Return all members of a group.
 ```
 TBD
 ```
+
+..NOTES
+Author: Zachary Loeber
 
 ## PARAMETERS
 
@@ -246,9 +249,8 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
-TBD
 
 ## RELATED LINKS
 
-[TBD]()
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

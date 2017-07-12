@@ -1,22 +1,26 @@
 ﻿function Get-DSForest {
     <#
     .SYNOPSIS
-        Retrieve an ADSI forest object.
+    Retrieve an ADSI forest object.
     .DESCRIPTION
-        Retrieve an ADSI forest object.
+    Retrieve an ADSI forest object.
     .PARAMETER ComputerName
-        Fully Qualified Name of a remote domain controller to connect to.
+    Fully Qualified Name of a remote domain controller to connect to.
     .PARAMETER Credential
-        Alternate credentials for retrieving forest information.
+    Alternate credentials for retrieving forest information.
     .PARAMETER Identity
-        Forest name to retreive.
+    Forest name to retreive.
     .PARAMETER UpdateCurrent
-        Updates the module stored currently connected forest object
+    Updates the module stored currently connected forest object
     .EXAMPLE
-        C:\PS> Get-DSForest
-        Gets the forest for the domain the host is corrently joined to or that was previously connected to via Connect-DSAD.
+    C:\PS> Get-DSForest
+    Gets the forest for the domain the host is corrently joined to or that was previously connected to via Connect-DSAD.
     .OUTPUTS
-        System.DirectoryServices.ActiveDirectory.Forest
+    System.DirectoryServices.ActiveDirectory.Forest
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(
@@ -47,7 +51,7 @@
         Write-Verbose "$($FunctionName): Begin."
     }
 
-    Process {     
+    Process {
         $context = Get-DSDirectoryContext -ContextType 'Forest' -ContextName $Identity -ComputerName $ComputerName -Credential $Credential
         $ForestObject = [DirectoryServices.ActiveDirectory.Forest]::GetForest($context)
         $RootDN = "DC=$(($ForestObject.Name).replace('.',',DC='))"

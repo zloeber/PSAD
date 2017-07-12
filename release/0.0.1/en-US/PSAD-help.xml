@@ -242,57 +242,6 @@
 </command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
-<command:details><command:name>Get-DistinguishedNameFromFQDN</command:name>
-<command:verb>Get</command:verb>
-<command:noun>DistinguishedNameFromFQDN</command:noun>
-<maml:description><maml:para>TBD
-</maml:para>
-</maml:description>
-</command:details>
-<maml:description><maml:para>TBD
-</maml:para>
-</maml:description>
-<command:syntax><command:syntaxItem><maml:name>Get-DistinguishedNameFromFQDN</maml:name>
-<command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="1" aliases="none"><maml:name>fqdn</maml:name>
-<maml:Description><maml:para>fqdn explanation
-</maml:para>
-</maml:Description>
-<command:parameterValue required="true" variableLength="false">String</command:parameterValue>
-<dev:type><maml:name>String</maml:name>
-<maml:uri /></dev:type>
-<dev:defaultValue>[System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()</dev:defaultValue>
-</command:parameter>
-</command:syntaxItem>
-</command:syntax>
-<command:parameters><command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="1" aliases="none"><maml:name>fqdn</maml:name>
-<maml:Description><maml:para>fqdn explanation
-</maml:para>
-</maml:Description>
-<command:parameterValue required="true" variableLength="false">String</command:parameterValue>
-<dev:type><maml:name>String</maml:name>
-<maml:uri /></dev:type>
-<dev:defaultValue>[System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()</dev:defaultValue>
-</command:parameter>
-</command:parameters>
-<command:inputTypes></command:inputTypes>
-<command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
-</maml:para>
-</maml:alert>
-</maml:alertSet>
-<command:examples><command:example><maml:title>-------------------------- EXAMPLE 1 --------------------------</maml:title>
-<dev:code>TBD</dev:code>
-<dev:remarks><maml:para>
-</maml:para>
-</dev:remarks>
-</command:example>
-</command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>Online Version:</maml:linkText>
-<maml:uri>http://msdn.microsoft.com/en-us/library/aa746475.aspx#special_characters</maml:uri>
-</maml:navigationLink>
-</command:relatedLinks>
-</command:command>
-<command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSADSchemaVersion</command:name>
 <command:verb>Get</command:verb>
 <command:noun>DSADSchemaVersion</command:noun>
@@ -345,7 +294,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -356,8 +305,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -432,7 +381,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -443,8 +392,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -519,7 +468,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -530,8 +479,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -1012,7 +961,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1035,7 +984,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSConfigPartitionObject</command:name>
@@ -1144,7 +1096,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1161,8 +1113,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -1393,7 +1345,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>None
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1404,8 +1356,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>NA</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -1504,7 +1456,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>Stolen and modified from https://github.com/darkoperator/ADAudit/blob/dev
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber modified from https://github.com/darkoperator/ADAudit/blob/dev
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1527,8 +1479,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>NA</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -1734,7 +1686,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1745,7 +1697,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSDomain</command:name>
@@ -1841,7 +1796,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1852,7 +1807,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSExchangeFederation</command:name>
@@ -1907,7 +1865,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1918,8 +1876,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -1976,7 +1934,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -1987,8 +1945,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -2045,7 +2003,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -2056,8 +2014,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -2155,7 +2113,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -2166,7 +2124,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSForestTrust</command:name>
@@ -2245,7 +2206,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -2256,7 +2217,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSGPO</command:name>
@@ -3330,19 +3294,19 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>
 </maml:para>
 </maml:alert>
 </maml:alertSet>
 <command:examples><command:example><maml:title>-------------------------- EXAMPLE 1 --------------------------</maml:title>
 <dev:code>TBD</dev:code>
-<dev:remarks><maml:para>
+<dev:remarks><maml:para>..NOTES Author: Zachary Loeber
 </maml:para>
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -3917,7 +3881,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -3928,8 +3892,8 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks><maml:navigationLink><maml:linkText>TBD</maml:linkText>
-<maml:uri></maml:uri>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
 </maml:navigationLink>
 </command:relatedLinks>
 </command:command>
@@ -3986,7 +3950,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -3997,7 +3961,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSPageSize</command:name>
@@ -4195,7 +4162,7 @@
 </maml:description>
 </command:returnValue>
 </command:returnValues>
-<maml:alertSet><maml:alert><maml:para>TBD
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -4206,7 +4173,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSTombstoneLifetime</command:name>
@@ -4261,7 +4231,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -4272,7 +4242,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Get-DSUser</command:name>
@@ -4868,7 +4841,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -4891,7 +4864,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Move-DSObject</command:name>
@@ -5033,7 +5009,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -5044,7 +5020,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Set-DSObject</command:name>
@@ -5275,7 +5254,7 @@
 </command:parameters>
 <command:inputTypes></command:inputTypes>
 <command:returnValues></command:returnValues>
-<maml:alertSet><maml:alert><maml:para>
+<maml:alertSet><maml:alert><maml:para>Author: Zachary Loeber
 </maml:para>
 </maml:alert>
 </maml:alertSet>
@@ -5286,7 +5265,10 @@
 </dev:remarks>
 </command:example>
 </command:examples>
-<command:relatedLinks></command:relatedLinks>
+<command:relatedLinks><maml:navigationLink><maml:linkText>https://github.com/zloeber/PSAD</maml:linkText>
+<maml:uri>https://github.com/zloeber/PSAD</maml:uri>
+</maml:navigationLink>
+</command:relatedLinks>
 </command:command>
 <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
 <command:details><command:name>Set-DSPageSize</command:name>

@@ -1,26 +1,26 @@
 ﻿function Get-DSDirectoryContext {
-<#
-.SYNOPSIS
+    <#
+    .SYNOPSIS
     Get a DirectoryContext object for a specified context.
-.DESCRIPTION
+    .DESCRIPTION
     Get a DirectoryContext object for a specified context.
-.PARAMETER ComputerName
+    .PARAMETER ComputerName
     Fully Qualified Name of a remote domain controller to connect to.
-.PARAMETER Credential
+    .PARAMETER Credential
     Alternate credentials for retrieving forest information.
-.PARAMETER ContextType
+    .PARAMETER ContextType
     Type of DirectoryContext to create. Can be ApplicationPartition ,ConfigurationSet, DirectoryServer, Domain, or Forest. Defaults to Domain.
-.PARAMETER ContextName
+    .PARAMETER ContextName
     Can be a forest, domain, or server name (depending on the context type)
-.EXAMPLE
+    .EXAMPLE
     TBD
-.OUTPUTS
+    .OUTPUTS
     System.DirectoryService.DirectoryContext
-.LINK
-    NA
-.NOTES
-    None
-#>
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
+    #>
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -32,7 +32,7 @@
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
-        
+
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
         [ValidateSet('ApplicationPartition','ConfigurationSet','DirectoryServer','Domain','Forest')]
         [Alias('Type','Context')]
@@ -97,7 +97,7 @@
             }
 
         }
-        
+
         New-Object -TypeName System.DirectoryServices.ActiveDirectory.DirectoryContext -ArgumentList $ArgumentList
     }
 }

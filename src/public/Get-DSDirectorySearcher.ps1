@@ -1,34 +1,38 @@
 ﻿function Get-DSDirectorySearcher {
     <#
     .SYNOPSIS
-        Get a diresctory searcher object fro a given domain.
+    Get a diresctory searcher object fro a given domain.
     .DESCRIPTION
-        Get a diresctory searcher object fro a given domain.
+    Get a diresctory searcher object fro a given domain.
     .PARAMETER ComputerName
-        Domain controller to use.
+    Domain controller to use.
     .PARAMETER Credential
-        Credentials to use connection.
+    Credentials to use connection.
     .PARAMETER Limit
-        Limits items retrieved. If set to 0 then there is no limit.
+    Limits items retrieved. If set to 0 then there is no limit.
     .PARAMETER PageSize
-        Items returned per page.
+    Items returned per page.
     .PARAMETER SearchRoot
-        Root of search.
+    Root of search.
     .PARAMETER Filter
-        LDAP filter for searches.
+    LDAP filter for searches.
     .PARAMETER Properties
-        Properties to include in output.
+    Properties to include in output.
     .PARAMETER SearchScope
-        Scope of a search as either a base, one-level, or subtree search, default is subtree.
+    Scope of a search as either a base, one-level, or subtree search, default is subtree.
     .PARAMETER SecurityMask
-        Specifies the available options for examining security information of a directory object.
+    Specifies the available options for examining security information of a directory object.
     .PARAMETER TombStone
-        Whether the search should also return deleted objects that match the search filter.
+    Whether the search should also return deleted objects that match the search filter.
     .EXAMPLE
-        C:\PS> $ADSearcher = Get-DSDirectorySearcher -Filter '(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))'
-        Create a DirectorySearcher object with a filter for searching for all computers with a servicePrincipalName for Microsoft SQL Server.
+    C:\PS> $ADSearcher = Get-DSDirectorySearcher -Filter '(&(objectCategory=computer)(servicePrincipalName=MSSQLSvc*))'
+    Create a DirectorySearcher object with a filter for searching for all computers with a servicePrincipalName for Microsoft SQL Server.
     .OUTPUTS
-        System.DirectoryServices.DirectorySearcher
+    System.DirectoryServices.DirectorySearcher
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(
@@ -83,10 +87,10 @@
     process {
         switch ( $ADConnectState ) {
             { @('AltUserAndServer', 'CurrentUserAltServer', 'AltUser') -contains $_ } {
-                Write-Verbose "$($FunctionName): Alternate user and/or server."
+                Write-Verbose "$($FunctionName): Alternate user and/or server (State = $ADConnectState)"
                 if ($searchRoot.Length -gt 0) {
+                    Write-Verbose "$($FunctionName): searchRoot defined as $searchRoot"
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -DistinguishedName $searchRoot -Credential $Credential
-
                 }
                 else {
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -Credential $Credential

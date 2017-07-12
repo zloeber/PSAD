@@ -1505,6 +1505,57 @@ function Get-CredentialState {
 }
 
 
+Function Get-DistinguishedNameFromFQDN {
+    <#
+    .SYNOPSIS
+    TBD
+
+    .DESCRIPTION
+    TBD
+
+    .PARAMETER fqdn
+    fqdn explanation
+
+	.NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
+    #>
+
+	param (
+		[String]$fqdn = [System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()
+	)
+
+	# Create a New Array 'Item' for each item in between the '.' characters
+	# Arrayitem1 division
+	# Arrayitem2 domain
+	# Arrayitem3 root
+	$FQDNArray = $FQDN.split(".")
+
+	# Add A Separator of ','
+	$Separator = ","
+
+	# For Each Item in the Array
+	# for (CreateVar; Condition; RepeatAction)
+	# for ($x is now equal to 0; while $x is less than total array length; add 1 to X
+	for ($x = 0; $x -lt $FQDNArray.Length ; $x++)
+		{
+
+		#If it's the last item in the array don't append a ','
+		if ($x -eq ($FQDNArray.Length - 1)) { $Separator = "" }
+
+		# Append to $DN DC= plus the array item with a separator after
+		[string]$DN += "DC=" + $FQDNArray[$x] + $Separator
+
+		# continue to next item in the array
+		}
+
+	#return the Distinguished Name
+	return $DN
+
+}
+
+
 function Get-DomainJoinStatus {
     $NetJoinStatus = @('Unknown', 'Unjoined', 'Workgroup', 'Domain')
 
@@ -2756,48 +2807,6 @@ function Format-DSSearchFilterValue {
 
 
 
-Function Get-DistinguishedNameFromFQDN {
-    <#
-    .EXTERNALHELP PSAD-help.xml
-    .LINK
-        https://github.com/zloeber/PSAD/tree/master/release/0.0.1/docs/Functions/Get-DistinguishedNameFromFQDN.md
-    #>
-
-	param (
-		[String]$fqdn = [System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()
-	)
-
-	# Create a New Array 'Item' for each item in between the '.' characters
-	# Arrayitem1 division
-	# Arrayitem2 domain
-	# Arrayitem3 root
-	$FQDNArray = $FQDN.split(".")
-	
-	# Add A Separator of ','
-	$Separator = ","
-
-	# For Each Item in the Array
-	# for (CreateVar; Condition; RepeatAction)
-	# for ($x is now equal to 0; while $x is less than total array length; add 1 to X
-	for ($x = 0; $x -lt $FQDNArray.Length ; $x++)
-		{ 
-
-		#If it's the last item in the array don't append a ','
-		if ($x -eq ($FQDNArray.Length - 1)) { $Separator = "" }
-		
-		# Append to $DN DC= plus the array item with a separator after
-		[string]$DN += "DC=" + $FQDNArray[$x] + $Separator
-		
-		# continue to next item in the array
-		}
-	
-	#return the Distinguished Name
-	return $DN
-
-}
-
-
-
 function Get-DSADSchemaVersion {
     <#
     .EXTERNALHELP PSAD-help.xml
@@ -3169,7 +3178,7 @@ function Get-DSConfigPartitionObject {
 
         [Parameter(Position = 2)]
         [string]$SearchPath,
-        
+
         [Parameter(Position = 3)]
         [string[]]$Properties = @('Name','ADSPath'),
 
@@ -3177,13 +3186,13 @@ function Get-DSConfigPartitionObject {
         [ValidateSet('Subtree', 'OneLevel', 'Base')]
         [string]$SearchScope = 'Base'
     )
-    
+
     begin {
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
     }
-    
+
     process {
         $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' -ComputerName $ComputerName -Credential $Credential
 
@@ -3305,7 +3314,7 @@ function Get-DSCurrentConnectionStatus {
 
 
 function Get-DSDirectoryContext {
-<#
+    <#
     .EXTERNALHELP PSAD-help.xml
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.1/docs/Functions/Get-DSDirectoryContext.md
@@ -3321,7 +3330,7 @@ function Get-DSDirectoryContext {
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
-        
+
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
         [ValidateSet('ApplicationPartition','ConfigurationSet','DirectoryServer','Domain','Forest')]
         [Alias('Type','Context')]
@@ -3386,7 +3395,7 @@ function Get-DSDirectoryContext {
             }
 
         }
-        
+
         New-Object -TypeName System.DirectoryServices.ActiveDirectory.DirectoryContext -ArgumentList $ArgumentList
     }
 }
@@ -3630,7 +3639,7 @@ function Get-DSDomain {
         try {
             $context = Get-DSDirectoryContext -ContextType 'Domain' -ContextName $DomainName -ComputerName $ComputerName -Credential $Credential
             $DomainObject = [DirectoryServices.ActiveDirectory.Domain]::GetDomain($context)
-            
+
             $RootDN = "DC=$(($DomainObject.Name).replace('.',',DC='))"
             $DEObj = Get-DSDirectoryEntry -DistinguishedName $RootDN -ComputerName $ComputerName -Credential $Credential
             $Sid = (New-Object -TypeName System.Security.Principal.SecurityIdentifier($DEObj.objectSid.value,0)).value
@@ -3638,7 +3647,7 @@ function Get-DSDomain {
 
             Add-Member -InputObject $DomainObject -MemberType NoteProperty -Name 'Sid' -Value $Sid
             Add-Member -InputObject $DomainObject -MemberType NoteProperty -Name 'Guid' -Value $guid
-      
+
             if ($UpdateCurrent) {
                 $Script:CurrentDomain = $DomainObject
             }
@@ -3705,15 +3714,15 @@ function Get-DSExchangeFederation {
         $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
         $ExchangeFederations = @()
     }
-    
+
     end {
         if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
 
             $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
-            
+
             ForEach ($ExchOrg in $ExchOrgs) {
                 $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
-                
+
                 # Get all found Exchange federations
                 $ExchangeFeds = @(Get-DSObject -Filter 'objectCategory=msExchFedSharingRelationship' -SearchRoot "LDAP://CN=Federation,$([string]$ExchOrg.distinguishedname)"  -SearchScope:SubTree -Properties $Props_ExchFeds)
                 Foreach ($ExchFed in $ExchangeFeds) {
@@ -3838,15 +3847,15 @@ function Get-DSExchangeServer {
         $ConfigNamingContext = (Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams).configurationNamingContext
         $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
     }
-    
+
     end {
         if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
 
             $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
-            
+
             ForEach ($ExchOrg in $ExchOrgs) {
                 $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
-                
+
                 # Get all found Exchange server information
                 ForEach ($ExchServer in $ExchServers) {
                     $AdminGroup = Get-ADPathName $ExchServer.adspath -GetElement 2 -ValuesOnly
@@ -3929,7 +3938,7 @@ function Get-DSForest {
         Write-Verbose "$($FunctionName): Begin."
     }
 
-    Process {     
+    Process {
         $context = Get-DSDirectoryContext -ContextType 'Forest' -ContextName $Identity -ComputerName $ComputerName -Credential $Credential
         $ForestObject = [DirectoryServices.ActiveDirectory.Forest]::GetForest($context)
         $RootDN = "DC=$(($ForestObject.Name).replace('.',',DC='))"
@@ -4171,7 +4180,7 @@ function Get-DSGPO {
 
 
 function Get-DSGroup {
-   <#
+    <#
     .EXTERNALHELP PSAD-help.xml
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.1/docs/Functions/Get-DSGroup.md
@@ -4956,7 +4965,7 @@ function Get-DSOCSTopology {
             return
         }
     }
-    
+
     end {
         ForEach ($Config in $OCSConfig) {
             $Version = $Config.Version
@@ -5001,7 +5010,7 @@ function Get-DSOCSTopology {
                     FQDN = $_.'msrtcsip-backendserver'
                 }
             }
-            
+
             # All pools
             @(Get-DSObject -Filter 'objectClass=msRTCSIP-Pool' -SearchRoot $ConfigPath -SearchScope:SubTree -Properties 'msrtcsip-pooldisplayname','dnshostname','cn','adspath' @DSParams) | Sort-Object msrtcsip-pooldisplayname | ForEach-Object {
                 New-Object -TypeName psobject -Property @{
@@ -5549,11 +5558,11 @@ function Move-DSObject {
         [Parameter(Position = 3)]
         [Alias('OU','TargetPath')]
         [string]$Destination,
-        
+
         [Parameter(Position = 4, HelpMessage = 'Force move to OU without confirmation.')]
         [Switch]$Force
     )
-    
+
     Begin {
         # Function initialization
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -5582,7 +5591,7 @@ function Move-DSObject {
         $YesToAll = $false
         $NoToAll = $false
     }
-    
+
     Process {
         $Identities += $Identity
     }
@@ -5648,8 +5657,7 @@ function Set-DSObject {
         [Switch]$Force
     )
 
-    Begin {
-        # Function initialization
+    begin {
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
@@ -5673,6 +5681,7 @@ function Set-DSObject {
     }
     end {
         Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Start processing for object - $ID"
             $SearcherParams.Filter = @("distinguishedName=$ID","objectGUID=$ID","name=$ID","cn=$ID","samaccountname=$ID")
             Get-DSObject @SearcherParams | ForEach-Object {
                 $Name = $_.Name
@@ -5690,7 +5699,8 @@ function Set-DSObject {
                         if ($pscmdlet.ShouldProcess("Update AD Object $Name property = '$Property', value = '$Value' (Existing value is '$CurrentValue')", "Update AD Object $Name property = '$Property', value = '$Value' (Existing value is '$CurrentValue')","Updating AD Object $Name property $Property")) {
                             if ($Force -Or $PSCmdlet.ShouldContinue("Are you REALLY sure you want to Update '$Name' property $Property (Existing value is '$CurrentValue') with the value of $Value ?", "Updating AD Object $Name", [ref]$YesToAll, [ref]$NotoAll)) {
                                 try {
-                                    $DE.psbase.InvokeSet($Property,$Value)
+                                    $DE.psbase.Put($Property,$Value)
+                                    #$DE.psbase.InvokeSet()
                                     $DE.SetInfo()
                                 }
                                 catch {
@@ -5702,7 +5712,8 @@ function Set-DSObject {
                     'MultiProperty'  {
                         $Properties.Keys | ForEach-Object {
                             try {
-                                $DE.psbase.InvokeSet($_,$Properties[$_])
+                                $DE.psbase.Put($_,$Properties[$_])
+                                #$DE.psbase.InvokeSet($_,$Properties[$_])
                             }
                             catch {
                                 Write-Warning "$($FunctionName): Unable to update $Name property $($_)"

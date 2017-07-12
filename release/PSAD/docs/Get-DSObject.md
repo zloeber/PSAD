@@ -12,10 +12,11 @@ Get AD objects of any kind.
 ## SYNTAX
 
 ```
-Get-DSObject [[-ComputerName] <String>] [[-Credential] <PSCredential>] [[-Limit] <Int32>]
- [[-SearchRoot] <String>] [[-Filter] <String[]>] [[-Properties] <String[]>] [[-PageSize] <Int32>]
- [[-SearchScope] <String>] [[-SecurityMask] <String>] [-TombStone] [-DontJoinAttributeValues]
- [-IncludeAllProperties] [-ExpandUAC] [-Raw] [-ChangeLogicOrder] [-ReturnDirectoryEntry]
+Get-DSObject [[-Identity] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+ [[-Limit] <Int32>] [[-SearchRoot] <String>] [[-Filter] <String[]>] [[-Properties] <String[]>]
+ [[-PageSize] <Int32>] [[-SearchScope] <String>] [[-SecurityMask] <String>] [-TombStone]
+ [-DontJoinAttributeValues] [-IncludeAllProperties] [-ExpandUAC] [-Raw] [-ChangeLogicOrder]
+ [[-ResultsAs] <String>]
 ```
 
 ## DESCRIPTION
@@ -31,6 +32,22 @@ TBD
 
 ## PARAMETERS
 
+### -Identity
+Object to retreive.
+Accepts distinguishedname, GUID, and samAccountName.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: Name
+
+Required: False
+Position: 1
+Default value: None
+Accept pipeline input: True (ByPropertyName, ByValue)
+Accept wildcard characters: True
+```
+
 ### -ComputerName
 Domain controller to use for this search.
 
@@ -40,7 +57,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: 1
+Position: 2
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -55,7 +72,7 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 2
+Position: 3
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -71,7 +88,7 @@ Parameter Sets: (All)
 Aliases: SizeLimit
 
 Required: False
-Position: 3
+Position: 4
 Default value: 0
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -86,7 +103,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 4
+Position: 5
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -101,14 +118,15 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 5
-Default value: Name=*
+Position: 6
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
 ### -Properties
 Properties to include in output.
+Is not used if ResultsAs is set to directoryentry.
 
 ```yaml
 Type: String[]
@@ -116,7 +134,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 6
+Position: 7
 Default value: @('Name','ADSPath')
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -131,7 +149,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 7
+Position: 8
 Default value: $Script:PageSize
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -146,7 +164,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 8
+Position: 9
 Default value: Subtree
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -161,7 +179,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 9
+Position: 10
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -215,6 +233,7 @@ Accept wildcard characters: False
 
 ### -ExpandUAC
 Expands the UAC attribute into readable format.
+Only effective if the ResultsAs parameter is psobject
 
 ```yaml
 Type: SwitchParameter
@@ -229,7 +248,7 @@ Accept wildcard characters: False
 ```
 
 ### -Raw
-Skip attempts to convert known property types.
+Skip attempts to convert known property types but still returns a psobject.
 
 ```yaml
 Type: SwitchParameter
@@ -258,17 +277,19 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -ReturnDirectoryEntry
-Returns a raw directory entry object instead of a psobject.
+### -ResultsAs
+How the results are returned.
+psobject (which includes interpretted properties), directoryentry, or searcher.
+Default is psobject.
 
 ```yaml
-Type: SwitchParameter
+Type: String
 Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: Named
-Default value: False
+Position: 11
+Default value: Psobject
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -278,6 +299,9 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
+Author: Zachary Loeber
 
 ## RELATED LINKS
+
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

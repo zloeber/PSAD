@@ -12,6 +12,10 @@
     PS> Get-DSOptionalFeatures
 
     Returns the optional features setup for this forest (such as the recycle bin)
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

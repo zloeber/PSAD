@@ -11,9 +11,9 @@
     .EXAMPLE
     PS> Get-DSADSchemaVersion
     .NOTES
-    TBD
+    Author: Zachary Loeber
     .LINK
-    TBD
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -112,9 +112,10 @@ Accept wildcard characters: False
 ### System.DirectoryService.DirectoryEntry
 
 ## NOTES
-Stolen and modified from https://github.com/darkoperator/ADAudit/blob/dev
+Author: Zachary Loeber
+modified from https://github.com/darkoperator/ADAudit/blob/dev
 
 ## RELATED LINKS
 
-[NA]()
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

@@ -85,6 +85,10 @@
     .EXAMPLE
     Get-DSUser -Filter '!(userAccountControl:1.2.840.113556.1.4.803:=2)' -PasswordNeverExpires -ExpandUAC -Properties 'Name','Useraccountcontrol'
     Same as above but with a reduced number of properties (which VASTLY speeds up results)
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
     param(

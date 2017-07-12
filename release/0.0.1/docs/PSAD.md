@@ -23,9 +23,6 @@ Takes the useraccesscontrol property, evaluates it, and spits out all set UAC pr
 ### [Format-DSSearchFilterValue](Format-DSSearchFilterValue.md)
 Escapes Active Directory special characters from a string.
 
-### [Get-DistinguishedNameFromFQDN](Get-DistinguishedNameFromFQDN.md)
-TBD
-
 ### [Get-DSADSchemaVersion](Get-DSADSchemaVersion.md)
 Retreives the active directory schema version in human readable format.
 

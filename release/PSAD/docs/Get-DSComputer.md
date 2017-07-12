@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
@@ -447,6 +447,9 @@ Accept wildcard characters: True
 ## OUTPUTS
 
 ## NOTES
+Author: Zachary Loeber
 
 ## RELATED LINKS
+
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 
