@@ -8,7 +8,10 @@ Advanced ADSI PowerShell Module
 
 ## Introduction
 
+Yet another AD PowerShell module that you may want to try out.
+
 ## Requirements
+PowerShell 3 should be all that is needed.
 
 ## Installation
 
@@ -23,9 +26,14 @@ and import the module to your session to test, but not install this module.
 
 ## Features
 
+- Pure ADSI based module (so it is fast as heck)
+- Ability to connect to remote or local forests with alternate credentials
+
 ## Versions
 
 0.0.1 - Initial Release
+0.0.2 - Some minor updates
+0.0.3 - Lots of fixes.
 
 ## Contribute
 
@@ -36,13 +44,10 @@ Studio Code and ensure that the PowerShell extension is installed.
 * [Visual Studio Code]
 * [PowerShell Extension]
 
-This module is tested with the PowerShell testing framework Pester. To run all
-tests, just start the included test script `.\Build.ps1 -test` or invoke Pester
-directly with the `Invoke-Pester` cmdlet in the tests directory. The tests will automatically download
-the latest meta test from the claudiospizzi/PowerShellModuleBase repository.
+For more information on contributing go to [this link](docs/Contributing.md)
 
 ## Other Information
 
-**Author:** Zachary Loeber
-
+**Author:** [Zachary Loeber](https://www.the-little-things.net)
 **Website:** https://github.com/zloeber/PSAD
+**ReadTheDocs** [site](psad.readthedocs.io/en/latest/)
