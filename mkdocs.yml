@@ -1,59 +1,59 @@
-﻿edit_uri: edit/master/docs/
+﻿site_name: PSAD Docs
+repo_url: https://github.com/zloeber/PSAD
+edit_uri: edit/master/docs/
 site_author: Zachary Loeber
 copyright: PSAD is licensed under this <a href='https://github.com/zloeber/PSAD/master/LICENSE.md'> license
 theme: readthedocs
-site_name: PSAD Docs
 Pages:
-  ReleaseNotes: ReleaseNotes.md
-  Acknowledgements: Acknowledgements.md
-  Contributing: Contributing.md
-  ChangeLog: ChangeLog.md
-  home: index.md
-  Functions:
-  - Connect-DSAD: Functions\Connect-DSAD.md
-  - Convert-DSCSE: Functions\Convert-DSCSE.md
-  - Convert-DSUACProperty: Functions\Convert-DSUACProperty.md
-  - Disable-DSObject: Functions\Disable-DSObject.md
-  - Enable-DSObject: Functions\Enable-DSObject.md
-  - Format-DSSearchFilterValue: Functions\Format-DSSearchFilterValue.md
-  - Get-CredentialState: Functions\Get-CredentialState.md
-  - Get-DistinguishedNameFromFQDN: Functions\Get-DistinguishedNameFromFQDN.md
-  - Get-DSADSchemaVersion: Functions\Get-DSADSchemaVersion.md
-  - Get-DSADSite: Functions\Get-DSADSite.md
-  - Get-DSADSiteSubnet: Functions\Get-DSADSiteSubnet.md
-  - Get-DSComputer: Functions\Get-DSComputer.md
-  - Get-DSConfigPartitionObject: Functions\Get-DSConfigPartitionObject.md
-  - Get-DSCurrentConnectedDomain: Functions\Get-DSCurrentConnectedDomain.md
-  - Get-DSCurrentConnectedForest: Functions\Get-DSCurrentConnectedForest.md
-  - Get-DSCurrentConnectedSchema: Functions\Get-DSCurrentConnectedSchema.md
-  - Get-DSCurrentConnectionStatus: Functions\Get-DSCurrentConnectionStatus.md
-  - Get-DSDirectoryContext: Functions\Get-DSDirectoryContext.md
-  - Get-DSDirectoryEntry: Functions\Get-DSDirectoryEntry.md
-  - Get-DSDirectorySearcher: Functions\Get-DSDirectorySearcher.md
-  - Get-DSDomain: Functions\Get-DSDomain.md
-  - Get-DSExchangeFederation: Functions\Get-DSExchangeFederation.md
-  - Get-DSExchangeSchemaVersion: Functions\Get-DSExchangeSchemaVersion.md
-  - Get-DSExchangeServer: Functions\Get-DSExchangeServer.md
-  - Get-DSForest: Functions\Get-DSForest.md
-  - Get-DSForestTrust: Functions\Get-DSForestTrust.md
-  - Get-DSGPO: Functions\Get-DSGPO.md
-  - Get-DSGroup: Functions\Get-DSGroup.md
-  - Get-DSGroupMember: Functions\Get-DSGroupMember.md
-  - Get-DSGUIDMap: Functions\Get-DSGUIDMap.md
-  - Get-DSLastLDAPFilter: Functions\Get-DSLastLDAPFilter.md
-  - Get-DSLastSearchSetting: Functions\Get-DSLastSearchSetting.md
-  - Get-DSObject: Functions\Get-DSObject.md
-  - Get-DSOCSSchemaVersion: Functions\Get-DSOCSSchemaVersion.md
-  - Get-DSOCSTopology: Functions\Get-DSOCSTopology.md
-  - Get-DSOptionalFeatures: Functions\Get-DSOptionalFeatures.md
-  - Get-DSPageSize: Functions\Get-DSPageSize.md
-  - Get-DSSCCMServer: Functions\Get-DSSCCMServer.md
-  - Get-DSSchema: Functions\Get-DSSchema.md
-  - Get-DSTombstoneLifetime: Functions\Get-DSTombstoneLifetime.md
-  - Get-DSUser: Functions\Get-DSUser.md
-  - Move-DSObject: Functions\Move-DSObject.md
-  - Set-DSObject: Functions\Set-DSObject.md
-  - Set-DSPageSize: Functions\Set-DSPageSize.md
-  - Test-DSObjectPath: Functions\Test-DSObjectPath.md
-repo_url: https://github.com/zloeber/PSAD
+  - Home: index.md
+  - ReleaseNotes: ReleaseNotes.md
+  - Acknowledgements: Acknowledgements.md
+  - Contributing: Contributing.md
+  - ChangeLog: ChangeLog.md
+  - Functions:
+    - Connect-DSAD: Functions\Connect-DSAD.md
+    - Convert-DSCSE: Functions\Convert-DSCSE.md
+    - Convert-DSUACProperty: Functions\Convert-DSUACProperty.md
+    - Disable-DSObject: Functions\Disable-DSObject.md
+    - Enable-DSObject: Functions\Enable-DSObject.md
+    - Format-DSSearchFilterValue: Functions\Format-DSSearchFilterValue.md
+    - Get-CredentialState: Functions\Get-CredentialState.md
+    - Get-DistinguishedNameFromFQDN: Functions\Get-DistinguishedNameFromFQDN.md
+    - Get-DSADSchemaVersion: Functions\Get-DSADSchemaVersion.md
+    - Get-DSADSite: Functions\Get-DSADSite.md
+    - Get-DSADSiteSubnet: Functions\Get-DSADSiteSubnet.md
+    - Get-DSComputer: Functions\Get-DSComputer.md
+    - Get-DSConfigPartitionObject: Functions\Get-DSConfigPartitionObject.md
+    - Get-DSCurrentConnectedDomain: Functions\Get-DSCurrentConnectedDomain.md
+    - Get-DSCurrentConnectedForest: Functions\Get-DSCurrentConnectedForest.md
+    - Get-DSCurrentConnectedSchema: Functions\Get-DSCurrentConnectedSchema.md
+    - Get-DSCurrentConnectionStatus: Functions\Get-DSCurrentConnectionStatus.md
+    - Get-DSDirectoryContext: Functions\Get-DSDirectoryContext.md
+    - Get-DSDirectoryEntry: Functions\Get-DSDirectoryEntry.md
+    - Get-DSDirectorySearcher: Functions\Get-DSDirectorySearcher.md
+    - Get-DSDomain: Functions\Get-DSDomain.md
+    - Get-DSExchangeFederation: Functions\Get-DSExchangeFederation.md
+    - Get-DSExchangeSchemaVersion: Functions\Get-DSExchangeSchemaVersion.md
+    - Get-DSExchangeServer: Functions\Get-DSExchangeServer.md
+    - Get-DSForest: Functions\Get-DSForest.md
+    - Get-DSForestTrust: Functions\Get-DSForestTrust.md
+    - Get-DSGPO: Functions\Get-DSGPO.md
+    - Get-DSGroup: Functions\Get-DSGroup.md
+    - Get-DSGroupMember: Functions\Get-DSGroupMember.md
+    - Get-DSGUIDMap: Functions\Get-DSGUIDMap.md
+    - Get-DSLastLDAPFilter: Functions\Get-DSLastLDAPFilter.md
+    - Get-DSLastSearchSetting: Functions\Get-DSLastSearchSetting.md
+    - Get-DSObject: Functions\Get-DSObject.md
+    - Get-DSOCSSchemaVersion: Functions\Get-DSOCSSchemaVersion.md
+    - Get-DSOCSTopology: Functions\Get-DSOCSTopology.md
+    - Get-DSOptionalFeatures: Functions\Get-DSOptionalFeatures.md
+    - Get-DSPageSize: Functions\Get-DSPageSize.md
+    - Get-DSSCCMServer: Functions\Get-DSSCCMServer.md
+    - Get-DSSchema: Functions\Get-DSSchema.md
+    - Get-DSTombstoneLifetime: Functions\Get-DSTombstoneLifetime.md
+    - Get-DSUser: Functions\Get-DSUser.md
+    - Move-DSObject: Functions\Move-DSObject.md
+    - Set-DSObject: Functions\Set-DSObject.md
+    - Set-DSPageSize: Functions\Set-DSPageSize.md
+    - Test-DSObjectPath: Functions\Test-DSObjectPath.md
 
