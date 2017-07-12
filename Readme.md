@@ -50,4 +50,4 @@ For more information on contributing go to [this link](docs/Contributing.md)
 
 **Author:** [Zachary Loeber](https://www.the-little-things.net)
 **Website:** https://github.com/zloeber/PSAD
-**ReadTheDocs** [site](psad.readthedocs.io/en/latest/)
+**ReadTheDocs** [site](https://psad.readthedocs.io/en/latest)

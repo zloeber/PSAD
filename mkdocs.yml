@@ -1,6 +1,6 @@
 ﻿edit_uri: edit/master/docs/
 site_author: Zachary Loeber
-copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/master/LICENSE.md'> license
+copyright: PSAD is licensed under this <a href='https://github.com/zloeber/PSAD/master/LICENSE.md'> license
 theme: readthedocs
 site_name: PSAD Docs
 Pages:
@@ -8,7 +8,7 @@ Pages:
   Acknowledgements: Acknowledgements.md
   Contributing: Contributing.md
   ChangeLog: ChangeLog.md
-  index: index.md
+  home: index.md
   Functions:
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
