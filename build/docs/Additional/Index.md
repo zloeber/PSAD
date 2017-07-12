@@ -28,14 +28,10 @@ Install-Module -Name PSAD -Scope CurrentUser
 ```
 
 ## Contributing
-[https://github.com/zloeber/PSAD/docs/Contributing.md](https://github.com/zloeber/PSAD/docs/Contributing.md)
+[Notes on contributing to this project](Contributing.md)
 
 ## Release Notes
-[https://github.com/zloeber/PSAD/docs/ReleaseNotes.md](https://github.com/zloeber/PSAD/docs/ReleaseNotes.md)
-
-## Change Log
-[https://github.com/zloeber/PSAD/docs/ChangeLog.md](https://github.com/zloeber/PSAD/docs/ChangeLog.md)
+[Version release notes](ReleaseNotes.md)
 
 ## Acknowledgements
-[https://github.com/zloeber/PSAD/docs/Acknowledgements.md](https://github.com/zloeber/PSAD/docs/Acknowledgements.md)
-
+[Other projects or sources of inspiration](Acknowledgements.md)
