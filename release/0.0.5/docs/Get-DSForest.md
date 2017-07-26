@@ -12,7 +12,7 @@ Retrieve an ADSI forest object.
 ## SYNTAX
 
 ```
-Get-DSForest [[-Identity] <String>] [-ComputerName <String>] [-Credential <PSCredential>] [-UpdateCurrent]
+Get-DSForest [[-Identity] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>] [-UpdateCurrent]
 ```
 
 ## DESCRIPTION
@@ -41,7 +41,7 @@ Required: False
 Position: 1
 Default value: ($Script:CurrentForest).name
 Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: True
+Accept wildcard characters: False
 ```
 
 ### -ComputerName
@@ -53,7 +53,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: Named
+Position: 2
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -68,7 +68,7 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: Named
+Position: 3
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False

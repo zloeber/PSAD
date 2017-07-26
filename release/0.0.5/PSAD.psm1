@@ -430,278 +430,43 @@ $Attrib_User_MSExchangeVersion = @{
 
 ## PRIVATE MODULE FUNCTIONS AND DATA ##
 
-function Add-Win32Type
-{
-<#
-    .SYNOPSIS
-
-        Creates a .NET type for an unmanaged Win32 function.
-
-        Author: Matthew Graeber (@mattifestation)
-        License: BSD 3-Clause
-        Required Dependencies: None
-        Optional Dependencies: func
-
-    .DESCRIPTION
-
-        Add-Win32Type enables you to easily interact with unmanaged (i.e.
-        Win32 unmanaged) functions in PowerShell. After providing
-        Add-Win32Type with a function signature, a .NET type is created
-        using reflection (i.e. csc.exe is never called like with Add-Type).
-
-        The 'func' helper function can be used to reduce typing when defining
-        multiple function definitions.
-
-    .PARAMETER DllName
-
-        The name of the DLL.
-
-    .PARAMETER FunctionName
-
-        The name of the target function.
-
-    .PARAMETER ReturnType
-
-        The return type of the function.
-
-    .PARAMETER ParameterTypes
-
-        The function parameters.
-
-    .PARAMETER NativeCallingConvention
-
-        Specifies the native calling convention of the function. Defaults to
-        stdcall.
-
-    .PARAMETER Charset
-
-        If you need to explicitly call an 'A' or 'W' Win32 function, you can
-        specify the character set.
-
-    .PARAMETER SetLastError
-
-        Indicates whether the callee calls the SetLastError Win32 API
-        function before returning from the attributed method.
-
-    .PARAMETER Module
-
-        The in-memory module that will host the functions. Use
-        New-InMemoryModule to define an in-memory module.
-
-    .PARAMETER Namespace
-
-        An optional namespace to prepend to the type. Add-Win32Type defaults
-        to a namespace consisting only of the name of the DLL.
-
-    .EXAMPLE
-
-        $Mod = New-InMemoryModule -ModuleName Win32
-
-        $FunctionDefinitions = @(
-          (func kernel32 GetProcAddress ([IntPtr]) @([IntPtr], [String]) -Charset Ansi -SetLastError),
-          (func kernel32 GetModuleHandle ([Intptr]) @([String]) -SetLastError),
-          (func ntdll RtlGetCurrentPeb ([IntPtr]) @())
-        )
-
-        $Types = $FunctionDefinitions | Add-Win32Type -Module $Mod -Namespace 'Win32'
-        $Kernel32 = $Types['kernel32']
-        $Ntdll = $Types['ntdll']
-        $Ntdll::RtlGetCurrentPeb()
-        $ntdllbase = $Kernel32::GetModuleHandle('ntdll')
-        $Kernel32::GetProcAddress($ntdllbase, 'RtlGetCurrentPeb')
-
-    .NOTES
-
-        Inspired by Lee Holmes' Invoke-WindowsApi http://poshcode.org/2189
-
-        When defining multiple function prototypes, it is ideal to provide
-        Add-Win32Type with an array of function signatures. That way, they
-        are all incorporated into the same in-memory module.
-#>
-
-    [OutputType([Hashtable])]
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipelineByPropertyName = $True)]
-        [String]
-        $DllName,
-
-        [Parameter(Mandatory = $True, ValueFromPipelineByPropertyName = $True)]
-        [String]
-        $FunctionName,
-
-        [Parameter(Mandatory = $True, ValueFromPipelineByPropertyName = $True)]
-        [Type]
-        $ReturnType,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [Type[]]
-        $ParameterTypes,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [Runtime.InteropServices.CallingConvention]
-        $NativeCallingConvention = [Runtime.InteropServices.CallingConvention]::StdCall,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [Runtime.InteropServices.CharSet]
-        $Charset = [Runtime.InteropServices.CharSet]::Auto,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [Switch]
-        $SetLastError,
-
-        [Parameter(Mandatory = $True)]
-        [ValidateScript({($_ -is [Reflection.Emit.ModuleBuilder]) -or ($_ -is [Reflection.Assembly])})]
-        $Module,
-
-        [ValidateNotNull()]
-        [String]
-        $Namespace = ''
-    )
-
-    BEGIN
-    {
-        $TypeHash = @{}
-    }
-
-    PROCESS
-    {
-        if ($Module -is [Reflection.Assembly])
-        {
-            if ($Namespace)
-            {
-                $TypeHash[$DllName] = $Module.GetType("$Namespace.$DllName")
-            }
-            else
-            {
-                $TypeHash[$DllName] = $Module.GetType($DllName)
-            }
-        }
-        else
-        {
-            # Define one type for each DLL
-            if (!$TypeHash.ContainsKey($DllName))
-            {
-                if ($Namespace)
-                {
-                    $TypeHash[$DllName] = $Module.DefineType("$Namespace.$DllName", 'Public,BeforeFieldInit')
-                }
-                else
-                {
-                    $TypeHash[$DllName] = $Module.DefineType($DllName, 'Public,BeforeFieldInit')
-                }
-            }
-
-            $Method = $TypeHash[$DllName].DefineMethod(
-                $FunctionName,
-                'Public,Static,PinvokeImpl',
-                $ReturnType,
-                $ParameterTypes)
-
-            # Make each ByRef parameter an Out parameter
-            $i = 1
-            ForEach($Parameter in $ParameterTypes)
-            {
-                if ($Parameter.IsByRef)
-                {
-                    [void] $Method.DefineParameter($i, 'Out', $Null)
-                }
-
-                $i++
-            }
-
-            $DllImport = [Runtime.InteropServices.DllImportAttribute]
-            $SetLastErrorField = $DllImport.GetField('SetLastError')
-            $CallingConventionField = $DllImport.GetField('CallingConvention')
-            $CharsetField = $DllImport.GetField('CharSet')
-            if ($SetLastError) { $SLEValue = $True } else { $SLEValue = $False }
-
-            # Equivalent to C# version of [DllImport(DllName)]
-            $Constructor = [Runtime.InteropServices.DllImportAttribute].GetConstructor([String])
-            $DllImportAttribute = New-Object Reflection.Emit.CustomAttributeBuilder($Constructor,
-                $DllName, [Reflection.PropertyInfo[]] @(), [Object[]] @(),
-                [Reflection.FieldInfo[]] @($SetLastErrorField, $CallingConventionField, $CharsetField),
-                [Object[]] @($SLEValue, ([Runtime.InteropServices.CallingConvention] $NativeCallingConvention), ([Runtime.InteropServices.CharSet] $Charset)))
-
-            $Method.SetCustomAttribute($DllImportAttribute)
-        }
-    }
-
-    END
-    {
-        if ($Module -is [Reflection.Assembly])
-        {
-            return $TypeHash
-        }
-
-        $ReturnTypes = @{}
-
-        ForEach ($Key in $TypeHash.Keys)
-        {
-            $Type = $TypeHash[$Key].CreateType()
-
-            $ReturnTypes[$Key] = $Type
-        }
-
-        return $ReturnTypes
-    }
-}
-
-
-Function Convert-ArrayToGuid ([System.Array]$byteArr) {
-    $guidAsString = ''
-    [int]$pos = 0
-    $byteArr | ForEach-Object {
-        $pos += 1
-        if ($pos -in (5,7,9,11)) { 
-            $guidAsString += '-'
-        }
-        $guidAsString += $_.ToString('x2').ToUpper()
-    }
-    [System.Guid]::Parse($guidAsString)
-}
-
-
 function ConvertTo-SecurityIdentifier
 {
     <#
     .SYNOPSIS
     Converts a string or byte array security identifier into a `System.Security.Principal.SecurityIdentifier` object.
 
+    .PARAMETER SID
+    The SID to convert to a `System.Security.Principal.SecurityIdentifier`. Accepts a SID in SDDL form as a `string`, a `System.Security.Principal.SecurityIdentifier` object, or a SID in binary form as an array of bytes.
+
     .DESCRIPTION
-    `ConvertTo-SecurityIdentifier` converts a SID in SDDL form (as a string), in binary form (as a byte array) into a `System.Security.Principal.SecurityIdentifier` object. It also accepts `System.Security.Principal.SecurityIdentifier` objects, and returns them back to you.
+    Converts a SID in SDDL form (as a string), in binary form (as a byte array) into a System.Security.Principal.SecurityIdentifier object. It also accepts System.Security.Principal.SecurityIdentifier objects, and returns them back to you.
 
     If the string or byte array don't represent a SID, an error is written and nothing is returned.
 
-    .LINK
-    Resolve-Identity
-
-    .LINK
-    Resolve-IdentityName
-
     .EXAMPLE
-    Resolve-Identity -SID 'S-1-5-21-2678556459-1010642102-471947008-1017'
+    ConvertTo-SecurityIdentifier -SID 'S-1-5-21-2678556459-1010642102-471947008-1017'
 
     Demonstrates how to convert a a SID in SDDL into a `System.Security.Principal.SecurityIdentifier` object.
 
     .EXAMPLE
-    Resolve-Identity -SID (New-Object 'Security.Principal.SecurityIdentifier' 'S-1-5-21-2678556459-1010642102-471947008-1017')
+    ConvertTo-SecurityIdentifier -SID (New-Object 'Security.Principal.SecurityIdentifier' 'S-1-5-21-2678556459-1010642102-471947008-1017')
 
     Demonstrates that you can pass a `SecurityIdentifier` object as the value of the SID parameter. The SID you passed in will be returned to you unchanged.
 
     .EXAMPLE
-    Resolve-Identity -SID $sidBytes
+    ConvertTo-SecurityIdentifier -SID $sidBytes
 
     Demonstrates that you can use a byte array that represents a SID as the value of the `SID` parameter.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
-        # The SID to convert to a `System.Security.Principal.SecurityIdentifier`. Accepts a SID in SDDL form as a `string`, a `System.Security.Principal.SecurityIdentifier` object, or a SID in binary form as an array of bytes.
         $SID
     )
 
     Use-CallerPreference -Cmdlet $PSCmdlet -Session $ExecutionContext.SessionState
-    
+
     try
     {
         if( $SID -is [string] )
@@ -726,182 +491,6 @@ function ConvertTo-SecurityIdentifier
     {
         Write-Error ('Exception converting SID parameter to a `SecurityIdentifier` object. This usually means you passed an invalid SID in SDDL form (as a string) or an invalid SID in binary form (as a byte array): {0}' -f $_.Exception.Message)
         return
-    }
-}
-
-
-function field
-{
-    Param
-    (
-        [Parameter(Position = 0, Mandatory = $True)]
-        [UInt16]
-        $Position,
-
-        [Parameter(Position = 1, Mandatory = $True)]
-        [Type]
-        $Type,
-
-        [Parameter(Position = 2)]
-        [UInt16]
-        $Offset,
-
-        [Object[]]
-        $MarshalAs
-    )
-
-    @{
-        Position = $Position
-        Type = $Type -as [Type]
-        Offset = $Offset
-        MarshalAs = $MarshalAs
-    }
-}
-
-
-function Find-UserField {
-<#
-    .SYNOPSIS
-
-        Searches user object fields for a given word (default *pass*). Default
-        field being searched is 'description'.
-
-        Taken directly from @obscuresec's post:
-            http://obscuresecurity.blogspot.com/2014/04/ADSISearcher.html
-
-    .PARAMETER SearchTerm
-
-        Term to search for, default of "pass".
-
-    .PARAMETER SearchField
-
-        User field to search, default of "description".
-
-    .PARAMETER ADSpath
-
-        The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
-        Useful for OU queries.
-
-    .PARAMETER Domain
-
-        Domain to search computer fields for, defaults to the current domain.
-
-    .PARAMETER DomainController
-
-        Domain controller to reflect LDAP queries through.
-
-    .PARAMETER PageSize
-
-        The PageSize to set for the LDAP searcher object.
-
-    .PARAMETER Credential
-
-        A [Management.Automation.PSCredential] object of alternate credentials
-        for connection to the target domain.
-
-    .EXAMPLE
-
-        PS C:\> Find-UserField -SearchField info -SearchTerm backup
-
-        Find user accounts with "backup" in the "info" field.
-#>
-
-    [CmdletBinding()]
-    param(
-        [Parameter(Position=0,ValueFromPipeline=$True)]
-        [String]
-        $SearchTerm = 'pass',
-
-        [String]
-        $SearchField = 'description',
-
-        [String]
-        $ADSpath,
-
-        [String]
-        $Domain,
-
-        [String]
-        $DomainController,
-
-        [ValidateRange(1,10000)] 
-        [Int]
-        $PageSize = 200,
-
-        [Management.Automation.PSCredential]
-        $Credential
-    )
- 
-    Get-NetUser -ADSpath $ADSpath -Domain $Domain -DomainController $DomainController -Credential $Credential -Filter "($SearchField=*$SearchTerm*)" -PageSize $PageSize | Select-Object samaccountname,$SearchField
-}
-
-
-function func
-{
-    Param
-    (
-        [Parameter(Position = 0, Mandatory = $True)]
-        [String]
-        $DllName,
-
-        [Parameter(Position = 1, Mandatory = $True)]
-        [String]
-        $FunctionName,
-
-        [Parameter(Position = 2, Mandatory = $True)]
-        [Type]
-        $ReturnType,
-
-        [Parameter(Position = 3)]
-        [Type[]]
-        $ParameterTypes,
-
-        [Parameter(Position = 4)]
-        [Runtime.InteropServices.CallingConvention]
-        $NativeCallingConvention,
-
-        [Parameter(Position = 5)]
-        [Runtime.InteropServices.CharSet]
-        $Charset,
-
-        [Switch]
-        $SetLastError
-    )
-
-    $Properties = @{
-        DllName = $DllName
-        FunctionName = $FunctionName
-        ReturnType = $ReturnType
-    }
-
-    if ($ParameterTypes) { $Properties['ParameterTypes'] = $ParameterTypes }
-    if ($NativeCallingConvention) { $Properties['NativeCallingConvention'] = $NativeCallingConvention }
-    if ($Charset) { $Properties['Charset'] = $Charset }
-    if ($SetLastError) { $Properties['SetLastError'] = $SetLastError }
-
-    New-Object PSObject -Property $Properties
-}
-
-
-function Get-ADIPAddress {
-    [CmdletBinding()]
-    [OutputType([string[]])]
-    Param (
-        # Computer name or FQDN to resolve
-        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-        $ComputerName
-    )
-
-    Process {
-        try {
-            $IPArray = ([Net.Dns]::GetHostEntry($ComputerName)).AddressList
-            foreach ($IPa in $IPArray) {
-                $IPa.IPAddressToString
-            }
-        }
-        catch {
-            Write-Verbose -Message "Could not resolve $($computerName)"
-        }
     }
 }
 
@@ -1452,27 +1041,354 @@ function Get-CallerPreference {
     }
 }
 
+Function Get-CombinedLDAPFilter {
+	<#
+    .SYNOPSIS
+    A helper function for combining LDAP filters.
+    .DESCRIPTION
+	A helper function for combining LDAP filters.
+    .PARAMETER Filter
+	LDAP filters to combine.
+	.PARAMETER Conditional
+	AD object to search for.
+
+    .EXAMPLE
+	NA
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
+	#>
+	[CmdletBinding()]
+	param (
+		[Parameter( Position = 0, ValueFromPipeline = $True )]
+		[String[]]$Filter,
+		[Parameter( Position = 1 )]
+		[String]$Conditional = '&'
+	)
+	begin {
+		# Function initialization
+		if ($Script:ThisModuleLoaded) {
+			Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+		}
+		$FunctionName = $MyInvocation.MyCommand.Name
+		$Filters = @()
+	}
+	process {
+		$Filters += $Filter
+	}
+
+	end {
+		$Filters = $Filters | Where-Object {-not [string]::IsNullOrEmpty($_)} | Select-Object -Unique
+		Write-Verbose "$($FunctionName): All passed filters = $($Filters -join ', ')"
+		switch ($Filters.Count) {
+			0 {
+				Write-Verbose "$($FunctionName): No filters passed, returning nothing."
+				$FinalFilter = $null
+			}
+			1 {
+				Write-Verbose "$($FunctionName): One filter passed, NOT using conditional."
+				$FinalFilter = "($Filters)"
+			}
+			Default {
+				Write-Verbose "$($FunctionName): Multiple filters passed, using conditional ($Conditional)."
+				$FinalFilter = "($Conditional({0}))" -f ($Filters -join ')(')
+			}
+		}
+
+		Write-Verbose "$($FunctionName): Final combined filter = $FinalFilter"
+		$FinalFilter
+	}
+}
+
 Function Get-CommonIDLDAPFilter {
+	<#
+    .SYNOPSIS
+    A helper function for creating an LDAP filter for an AD object based on identity.
+    .DESCRIPTION
+	A helper function for creating an LDAP filter for an AD object based on identity.
+    .PARAMETER Identity
+	AD object to search for.
+    .PARAMETER Filter
+    LDAP filter for searches.
+
+    .EXAMPLE
+	NA
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
+	#>
+	[CmdletBinding()]
 	param (
 		[String]$Identity,
 		[String[]]$Filter
 	)
+	# Function initialization
+	if ($Script:ThisModuleLoaded) {
+		Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+	}
 
 	if ([string]::IsNullOrEmpty($Identity)) {
-			# If no identity is passed then use a generic filter
-			if ($Filter.Count -eq 0) {
-				$Filter = @('name=*')
-			}
+		# If no identity is passed and no filter is passed then use a generic filter
+		if ($Filter.Count -eq 0) {
+			$Filter = @('distinguishedName=*')
+		}
 	}
 	else {
-			# Otherwise use OR logic with some fuzzy matching
-			$ObjID = Format-DSSearchFilterValue -SearchString $Identity
-			Write-Verbose "$($FunctionName): Identity passed, any existing filters will be ignored."
-			$Filter = @("distinguishedName=$ObjID","objectGUID=$ObjID","samaccountname=$ObjID")
+		# Otherwise use OR logic with some fuzzy matching for the ID
+		Write-Verbose "$($FunctionName): Identity passed ($ObjID), any existing filters will be ignored."
+		$ObjID = Format-DSSearchFilterValue -SearchString $Identity
+
+		# Do this to capture regular accounts as well as computer accounts (include a $ at the end)
+		$SAMNameFilter = @("samaccountname=$ObjID","samaccountname=$ObjID$")
+		$Filter = @("distinguishedName=$ObjID","objectGUID=$ObjID") + (Get-CombinedLDAPFilter -Filter $SAMNameFilter -Conditional '|')
 	}
 
-	@($Filter | Select-Object -Unique)
+	Get-CombinedLDAPFilter -Filter $Filter -Conditional '|'
 }
+
+function Get-CommonParameters {
+    # Helper function to get all the automatically added parameters in an
+    # advanced function
+    function somefunct {
+        [CmdletBinding(SupportsShouldProcess = $true, SupportsPaging = $true, SupportsTransactions = $true)]
+        param()
+    }
+
+    ((Get-Command somefunct).Parameters).Keys
+}
+
+function Get-CommonSearcherParams {
+    <#
+    .SYNOPSIS
+    Constuct parameters for the most common searches.
+    .DESCRIPTION
+    Constuct search parameters from the most common PSAD parameters. This creates a hashtable
+    suitable for get-dsdirectorysearcher.
+    .PARAMETER Identity
+    AD object to search for.
+    .PARAMETER ComputerName
+    Domain controller to use for this search.
+    .PARAMETER Credential
+    Credentials to use for connection to AD.
+    .PARAMETER Limit
+    Limits items retrieved. If set to 0 then there is no limit.
+    .PARAMETER PageSize
+    Items returned per page.
+    .PARAMETER SearchRoot
+    Root of search.
+    .PARAMETER Filter
+    User passed LDAP filter for searches.
+    .PARAMETER BaseFilter
+    Other LDAP filters for specific searches (like user or computer)
+    .PARAMETER Properties
+    Properties to include in output.
+    .PARAMETER SearchScope
+    Scope of a search as either a base, one-level, or subtree search, default is subtree.
+    .PARAMETER SecurityMask
+    Specifies the available options for examining security information of a directory object.
+    .PARAMETER TombStone
+    Whether the search should also return deleted objects that match the search filter.
+    .PARAMETER Raw
+    Skip attempts to convert known property types.
+    .PARAMETER IncludeAllProperties
+    Include all properties for an object.
+    .PARAMETER IncludeNullProperties
+    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    .PARAMETER ModifiedAfter
+    Account was modified after this time
+    .PARAMETER ModifiedBefore
+    Account was modified before this time
+    .PARAMETER CreatedAfter
+    Account was created after this time
+    .PARAMETER CreatedBefore
+    Account was created before this time
+    .PARAMETER ChangeLogicOrder
+    Alter LDAP filter logic to use OR instead of AND
+    .PARAMETER DontJoinAttributeValues
+    Output will automatically join the attributes unless this switch is set.
+    .PARAMETER ExpandUAC
+    Expands the UAC attribute into readable format.
+    .PARAMETER Raw
+    Skip attempts to convert known property types.
+    .EXAMPLE
+    NA
+    .NOTES
+    Author: Zachary Loeber
+    .LINK
+    https://github.com/zloeber/PSAD
+    #>
+    [CmdletBinding()]
+    [OutputType([Hashtable])]
+    param(
+        [Parameter( Position = 0 )]
+        [Alias('User', 'Name', 'sAMAccountName', 'distinguishedName')]
+        [string]$Identity,
+
+        [Parameter( Position = 1 )]
+        [Alias('Server', 'ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter( Position = 2 )]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential,
+
+        [Parameter()]
+        [Alias('SizeLimit')]
+        [int]$Limit = 0,
+
+        [Parameter()]
+        [string]$SearchRoot,
+
+        [Parameter()]
+        [string[]]$Filter,
+
+        [Parameter()]
+        [string]$BaseFilter,
+
+        [Parameter()]
+        [string[]]$Properties = @('Name','ADSPath'),
+
+        [Parameter()]
+        [int]$PageSize = $Script:PageSize,
+
+        [Parameter()]
+        [ValidateSet('Subtree', 'OneLevel', 'Base')]
+        [string]$SearchScope = 'Subtree',
+
+        [Parameter()]
+        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
+        [string]$SecurityMask = 'None',
+
+        [Parameter()]
+        [bool]$TombStone,
+
+        [Parameter()]
+        [bool]$IncludeAllProperties,
+
+        [Parameter()]
+        [bool]$IncludeNullProperties,
+
+        [Parameter()]
+        [bool]$ChangeLogicOrder,
+
+        [Parameter()]
+        $ModifiedAfter,
+
+        [Parameter()]
+        $ModifiedBefore,
+
+        [Parameter()]
+        $CreatedAfter,
+
+        [Parameter()]
+        $CreatedBefore
+    )
+
+    # Function initialization
+    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+
+    # Generate additional groups of filters to add to the LDAP filter set
+    #  these will always be logically ANDed with the custom filters
+    $LDAPFilters = @()
+
+    if ($ChangeLogicOrder) {
+        Write-Verbose "$($FunctionName): Setting logic order for custom filters to OR."
+        $AndOr = '|'
+    }
+    else {
+        Write-Verbose "$($FunctionName): Setting logic order for custom filters to AND."
+        $AndOr = '&'
+    }
+
+    $LDAPFilters += Get-CombinedLDAPFilter -Filter $Filter -Conditional $AndOr
+
+    # Create a set of other filters based on the passed parameters
+    $ModifiedFilters = @()
+
+    # Filter for modification time
+    if ($ModifiedAfter) {
+        $ModifiedFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
+    }
+    if ($ModifiedBefore) {
+        $ModifiedFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
+    }
+
+    $LDAPFilters += Get-CombinedLDAPFilter -Filter $ModifiedFilters -Conditional '&'
+
+    # Filter for creation time
+    $CreatedFilters = @()
+    if ($CreatedAfter) {
+        $CreatedFilters += "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
+    }
+    if ($CreatedBefore) {
+        $CreatedFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
+    }
+    $LDAPFilters += Get-CombinedLDAPFilter -Filter $CreatedFilters -Conditional '&'
+
+    if (-not [string]::IsNullOrEmpty($Identity)) {
+        Write-Verbose "$($FunctionName): Identity was passed ($Identity), creating filter"
+        $LDAPFilters += Get-CommonIDLDAPFilter -Identity $Identity -Filter $Filter
+    }
+
+    $LDAPFilters += $BaseFilter
+
+    $FinalLDAPFilters = Get-CombinedLDAPFilter -Filter $LDAPFilters -Conditional '&'
+
+    if ($null -eq $FinalLDAPFilters) {
+        $FinalLDAPFilters = '(distinguishedName=*)'
+    }
+    Write-Verbose "$($FunctionName): Final LDAPFilter string = $FinalLDAPFilters"
+
+    $SearcherParams = @{
+        ComputerName = $ComputerName
+        SearchRoot = $searchRoot
+        SearchScope = $SearchScope
+        Limit = $Limit
+        Credential = $Credential
+        Filter = $FinalLDAPFilters
+        Properties = $Properties
+        PageSize = $PageSize
+        SecurityMask = $SecurityMask
+    }
+    if ($Tombstone) {
+        Write-Verbose "$($FunctionName): Including tombstone items"
+        $SearcherParams.Tombstone = $true
+    }
+
+    # If all properties are being returned then we have nothing more to do
+    if ($IncludeAllProperties) {
+        Write-Verbose "$($FunctionName): Including all properties"
+        $SearcherParams.Properties = '*'
+    }
+    else {
+
+        # Otherwise we need to maybe add different properties which are used to derive other properties
+        if ($IncludeNullProperties) {
+            Write-Verbose "$($FunctionName): Including null properties"
+            # To derive null properties we need the objectClass for the schema lookup.
+            if (($SearcherParams.Properties -notcontains 'objectClass') -and ($SearcherParams.Properties -ne '*')) {
+                $SearcherParams.Properties += 'objectClass'
+            }
+        }
+
+        # if we are including some non-standard group properties then add grouptype so we can derive them
+        if (($SearcherParams.Properties -contains 'GroupScope') -or ($SearcherParams.Properties -contains 'GroupCategory')) {
+            if ($SearcherParams.Properties -notcontains 'grouptype') {
+                $SearcherParams.Properties += 'grouptype'
+            }
+        }
+    }
+
+    Write-Verbose "$($FunctionName): $(New-Object psobject -Property $SearcherParams)"
+    return $SearcherParams
+}
+
 
 function Get-CredentialState {
     <#
@@ -1527,57 +1443,6 @@ function Get-CredentialState {
 }
 
 
-Function Get-DistinguishedNameFromFQDN {
-    <#
-    .SYNOPSIS
-    TBD
-
-    .DESCRIPTION
-    TBD
-
-    .PARAMETER fqdn
-    fqdn explanation
-
-	.NOTES
-    Author: Zachary Loeber
-    .LINK
-    https://github.com/zloeber/PSAD
-    #>
-
-	param (
-		[String]$fqdn = [System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()
-	)
-
-	# Create a New Array 'Item' for each item in between the '.' characters
-	# Arrayitem1 division
-	# Arrayitem2 domain
-	# Arrayitem3 root
-	$FQDNArray = $FQDN.split(".")
-
-	# Add A Separator of ','
-	$Separator = ","
-
-	# For Each Item in the Array
-	# for (CreateVar; Condition; RepeatAction)
-	# for ($x is now equal to 0; while $x is less than total array length; add 1 to X
-	for ($x = 0; $x -lt $FQDNArray.Length ; $x++)
-		{
-
-		#If it's the last item in the array don't append a ','
-		if ($x -eq ($FQDNArray.Length - 1)) { $Separator = "" }
-
-		# Append to $DN DC= plus the array item with a separator after
-		[string]$DN += "DC=" + $FQDNArray[$x] + $Separator
-
-		# continue to next item in the array
-		}
-
-	#return the Distinguished Name
-	return $DN
-
-}
-
-
 function Get-DomainJoinStatus {
     $NetJoinStatus = @('Unknown', 'Unjoined', 'Workgroup', 'Domain')
 
@@ -1594,744 +1459,732 @@ public static extern int NetGetJoinInformation(string server,out IntPtr domain,o
 }
 
 
-function Get-GptTmpl {
-<#
+function New-DynamicParameter {
+    <#
     .SYNOPSIS
-
-        Helper to parse a GptTmpl.inf policy file path into a custom object.
-
-    .PARAMETER GptTmplPath
-
-        The GptTmpl.inf file path name to parse. 
-
-    .PARAMETER UsePSDrive
-
-        Switch. Mount the target GptTmpl folder path as a temporary PSDrive.
-
-    .EXAMPLE
-
-        PS C:\> Get-GptTmpl -GptTmplPath "\\dev.testlab.local\sysvol\dev.testlab.local\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Microsoft\Windows NT\SecEdit\GptTmpl.inf"
-
-        Parse the default domain policy .inf for dev.testlab.local
-#>
-
-    [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$True, ValueFromPipeline=$True)]
-        [String]
-        $GptTmplPath,
-
-        [Switch]
-        $UsePSDrive
-    )
-
-    if($UsePSDrive) {
-        # if we're PSDrives, create a temporary mount point
-        $Parts = $GptTmplPath.split('\')
-        $FolderPath = $Parts[0..($Parts.length-2)] -join '\'
-        $FilePath = $Parts[-1]
-        $RandDrive = ("abcdefghijklmnopqrstuvwxyz".ToCharArray() | Get-Random -Count 7) -join ''
-
-        Write-Verbose "Mounting path $GptTmplPath using a temp PSDrive at $RandDrive"
-
-        try {
-            $Null = New-PSDrive -Name $RandDrive -PSProvider FileSystem -Root $FolderPath  -ErrorAction Stop
-        }
-        catch {
-            Write-Verbose "Error mounting path $GptTmplPath : $_"
-            return $Null
-        }
-
-        # so we can cd/dir the new drive
-        $TargetGptTmplPath = $RandDrive + ":\" + $FilePath
-    }
-    else {
-        $TargetGptTmplPath = $GptTmplPath
-    }
-
-    Write-Verbose "GptTmplPath: $GptTmplPath"
-
-    try {
-        Write-Verbose "Parsing $TargetGptTmplPath"
-        $TargetGptTmplPath | Get-IniContent -ErrorAction SilentlyContinue
-    }
-    catch {
-        Write-Verbose "Error parsing $TargetGptTmplPath : $_"
-    }
-
-    if($UsePSDrive -and $RandDrive) {
-        Write-Verbose "Removing temp PSDrive $RandDrive"
-        Get-PSDrive -Name $RandDrive -ErrorAction SilentlyContinue | Remove-PSDrive -Force
-    }
-}
-
-
-function Get-GroupsXML {
-<#
-    .SYNOPSIS
-
-        Helper to parse a groups.xml file path into a custom object.
-
-    .PARAMETER GroupsXMLpath
-
-        The groups.xml file path name to parse. 
-
-    .PARAMETER UsePSDrive
-
-        Switch. Mount the target groups.xml folder path as a temporary PSDrive.
-#>
-
-    [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$True, ValueFromPipeline=$True)]
-        [String]
-        $GroupsXMLPath,
-
-        [Switch]
-        $UsePSDrive
-    )
-
-    if($UsePSDrive) {
-        # if we're PSDrives, create a temporary mount point
-        $Parts = $GroupsXMLPath.split('\')
-        $FolderPath = $Parts[0..($Parts.length-2)] -join '\'
-        $FilePath = $Parts[-1]
-        $RandDrive = ("abcdefghijklmnopqrstuvwxyz".ToCharArray() | Get-Random -Count 7) -join ''
-
-        Write-Verbose "Mounting path $GroupsXMLPath using a temp PSDrive at $RandDrive"
-
-        try {
-            $Null = New-PSDrive -Name $RandDrive -PSProvider FileSystem -Root $FolderPath  -ErrorAction Stop
-        }
-        catch {
-            Write-Verbose "Error mounting path $GroupsXMLPath : $_"
-            return $Null
-        }
-
-        # so we can cd/dir the new drive
-        $TargetGroupsXMLPath = $RandDrive + ":\" + $FilePath
-    }
-    else {
-        $TargetGroupsXMLPath = $GroupsXMLPath
-    }
-
-    try {
-        [XML]$GroupsXMLcontent = Get-Content $TargetGroupsXMLPath -ErrorAction Stop
-
-        # process all group properties in the XML
-        $GroupsXMLcontent | Select-Xml "/Groups/Group" | Select-Object -ExpandProperty node | ForEach-Object {
-
-            $Groupname = $_.Properties.groupName
-
-            # extract the localgroup sid for memberof
-            $GroupSID = $_.Properties.groupSid
-            if(-not $GroupSID) {
-                if($Groupname -match 'Administrators') {
-                    $GroupSID = 'S-1-5-32-544'
-                }
-                elseif($Groupname -match 'Remote Desktop') {
-                    $GroupSID = 'S-1-5-32-555'
-                }
-                elseif($Groupname -match 'Guests') {
-                    $GroupSID = 'S-1-5-32-546'
-                }
-                else {
-                    $GroupSID = Convert-NameToSid -ObjectName $Groupname | Select-Object -ExpandProperty SID
-                }
-            }
-
-            # extract out members added to this group
-            $Members = $_.Properties.members | Select-Object -ExpandProperty Member | Where-Object { $_.action -match 'ADD' } | ForEach-Object {
-                if($_.sid) { $_.sid }
-                else { $_.name }
-            }
-
-            if ($Members) {
-
-                # extract out any/all filters...I hate you GPP
-                if($_.filters) {
-                    $Filters = $_.filters.GetEnumerator() | ForEach-Object {
-                        New-Object -TypeName PSObject -Property @{'Type' = $_.LocalName;'Value' = $_.name}
-                    }
-                }
-                else {
-                    $Filters = $Null
-                }
-
-                if($Members -isnot [System.Array]) { $Members = @($Members) }
-
-                $GPOGroup = New-Object PSObject
-                $GPOGroup | Add-Member Noteproperty 'GPOPath' $TargetGroupsXMLPath
-                $GPOGroup | Add-Member Noteproperty 'Filters' $Filters
-                $GPOGroup | Add-Member Noteproperty 'GroupName' $GroupName
-                $GPOGroup | Add-Member Noteproperty 'GroupSID' $GroupSID
-                $GPOGroup | Add-Member Noteproperty 'GroupMemberOf' $Null
-                $GPOGroup | Add-Member Noteproperty 'GroupMembers' $Members
-                $GPOGroup
-            }
-        }
-    }
-    catch {
-        Write-Verbose "Error parsing $TargetGroupsXMLPath : $_"
-    }
-
-    if($UsePSDrive -and $RandDrive) {
-        Write-Verbose "Removing temp PSDrive $RandDrive"
-        Get-PSDrive -Name $RandDrive -ErrorAction SilentlyContinue | Remove-PSDrive -Force
-    }
-}
-
-
-filter Get-IniContent {
-<#
-.SYNOPSIS
-This helper parses an .ini file into a proper PowerShell object.
-
-.DESCRIPTION
-This helper parses an .ini file into a proper PowerShell object.
-
-.NOTES
-Author: 'The Scripting Guys'
-
-.LINK
-https://blogs.technet.microsoft.com/heyscriptingguy/2011/08/20/use-powershell-to-work-with-any-ini-file/
-#>
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$True, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [Alias('FullName')]
-        [ValidateScript({ Test-Path -Path $_ })]
-        [String[]]
-        $Path
-    )
-
-    ForEach($TargetPath in $Path) {
-        $IniObject = @{}
-        Switch -Regex -File $TargetPath {
-            "^\[(.+)\]" # Section
-            {
-                $Section = $matches[1].Trim()
-                $IniObject[$Section] = @{}
-                $CommentCount = 0
-            }
-            "^(;.*)$" # Comment
-            {
-                $Value = $matches[1].Trim()
-                $CommentCount = $CommentCount + 1
-                $Name = 'Comment' + $CommentCount
-                $IniObject[$Section][$Name] = $Value
-            } 
-            "(.+?)\s*=(.*)" # Key
-            {
-                $Name, $Value = $matches[1..2]
-                $Name = $Name.Trim()
-                $Values = $Value.split(',') | ForEach-Object {$_.Trim()}
-                if($Values -isnot [System.Array]) {$Values = @($Values)}
-                $IniObject[$Section][$Name] = $Values
-            }
-        }
-        $IniObject
-    }
-}
-
-
-filter Get-IPAddress {
-<#
-    .SYNOPSIS
-
-        Resolves a given hostename to its associated IPv4 address. 
-        If no hostname is provided, it defaults to returning
-        the IP address of the localhost.
-
-    .EXAMPLE
-
-        PS C:\> Get-IPAddress -ComputerName SERVER
-        
-        Return the IPv4 address of 'SERVER'
-
-    .EXAMPLE
-
-        PS C:\> Get-Content .\hostnames.txt | Get-IPAddress
-
-        Get the IP addresses of all hostnames in an input file.
-#>
-
-    [CmdletBinding()]
-    param(
-        [Parameter(Position=0, ValueFromPipeline=$True)]
-        [Alias('HostName')]
-        [String]
-        $ComputerName = $Env:ComputerName
-    )
-
-    try {
-        # extract the computer name from whatever object was passed on the pipeline
-        $Computer = $ComputerName | Get-NameField
-
-        # get the IP resolution of this specified hostname
-        @(([Net.Dns]::GetHostEntry($Computer)).AddressList) | ForEach-Object {
-            if ($_.AddressFamily -eq 'InterNetwork') {
-                $Out = New-Object PSObject
-                $Out | Add-Member Noteproperty 'ComputerName' $Computer
-                $Out | Add-Member Noteproperty 'IPAddress' $_.IPAddressToString
-                $Out
-            }
-        }
-    }
-    catch {
-        Write-Verbose -Message 'Could not resolve host to an IP Address.'
-    }
-}
-
-
-filter Get-NameField {
-<#
-    .SYNOPSIS
-    
-        Helper that attempts to extract appropriate field names from
-        passed computer objects.
-
-    .PARAMETER Object
-
-        The passed object to extract name fields from.
-
-    .PARAMETER DnsHostName
-        
-        A DnsHostName to extract through ValueFromPipelineByPropertyName.
-
-    .PARAMETER Name
-        
-        A Name to extract through ValueFromPipelineByPropertyName.
-
-    .EXAMPLE
-
-        PS C:\> Get-NetComputer -FullData | Get-NameField
-#>
-    [CmdletBinding()]
-    param(
-        [Parameter(ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
-        [Object]
-        $Object,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [String]
-        $DnsHostName,
-
-        [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [String]
-        $Name
-    )
-
-    if($PSBoundParameters['DnsHostName']) {
-        $DnsHostName
-    }
-    elseif($PSBoundParameters['Name']) {
-        $Name
-    }
-    elseif($Object) {
-        if ( [bool]($Object.PSobject.Properties.name -match "dnshostname") ) {
-            # objects from Get-NetComputer
-            $Object.dnshostname
-        }
-        elseif ( [bool]($Object.PSobject.Properties.name -match "name") ) {
-            # objects from Get-NetDomainController
-            $Object.name
-        }
-        else {
-            # strings and catch alls
-            $Object
-        }
-    }
-    else {
-        return $Null
-    }
-}
-
-
-function Get-PIIPAddress {
-    # Retreive IP address informaton from dot net core only functions (should run on both linux and windows properly)
-    $NetworkInterfaces = @([System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() | Where-Object {($_.OperationalStatus -eq 'Up')})
-    $NetworkInterfaces | Foreach-Object {
-        $_.GetIPProperties() | Where-Object {$_.GatewayAddresses} | Foreach-Object {
-            $Gateway = $_.GatewayAddresses.Address.IPAddressToString
-            $DNSAddresses = @($_.DnsAddresses | Foreach-Object {$_.IPAddressToString})
-            $_.UnicastAddresses | Where-Object {$_.Address -notlike '*::*'} | Foreach-Object {
-                New-Object PSObject -Property @{
-                    IP = $_.Address
-                    Prefix = $_.PrefixLength
-                    Gateway = $Gateway
-                    DNS = $DNSAddresses
-                }
-            }
-        }
-    }
-}
-
-
-filter Get-Proxy {
-<#
-    .SYNOPSIS
-    
-        Enumerates the proxy server and WPAD conents for the current user.
-
-    .PARAMETER ComputerName
-
-        The computername to enumerate proxy settings on, defaults to local host.
-
-    .EXAMPLE
-
-        PS C:\> Get-Proxy 
-        
-        Returns the current proxy settings.
-#>
-    param(
-        [Parameter(ValueFromPipeline=$True)]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $ComputerName = $ENV:COMPUTERNAME
-    )
-
-    try {
-        $Reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('CurrentUser', $ComputerName)
-        $RegKey = $Reg.OpenSubkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings")
-        $ProxyServer = $RegKey.GetValue('ProxyServer')
-        $AutoConfigURL = $RegKey.GetValue('AutoConfigURL')
-
-        $Wpad = ""
-        if($AutoConfigURL -and ($AutoConfigURL -ne "")) {
-            try {
-                $Wpad = (New-Object Net.Webclient).DownloadString($AutoConfigURL)
-            }
-            catch {
-                Write-Warning "Error connecting to AutoConfigURL : $AutoConfigURL"
-            }
-        }
-        
-        if($ProxyServer -or $AutoConfigUrl) {
-
-            $Properties = @{
-                'ProxyServer' = $ProxyServer
-                'AutoConfigURL' = $AutoConfigURL
-                'Wpad' = $Wpad
-            }
-            
-            New-Object -TypeName PSObject -Property $Properties
-        }
-        else {
-            Write-Warning "No proxy settings found for $ComputerName"
-        }
-    }
-    catch {
-        Write-Warning "Error enumerating proxy settings for $ComputerName : $_"
-    }
-}
-
-
-function Invoke-ThreadedFunction {
-    # Helper used by any threaded host enumeration functions
-    [CmdletBinding()]
-    param(
-        [Parameter(Position=0,Mandatory=$True)]
-        [String[]]
-        $ComputerName,
-
-        [Parameter(Position=1,Mandatory=$True)]
-        [System.Management.Automation.ScriptBlock]
-        $ScriptBlock,
-
-        [Parameter(Position=2)]
-        [Hashtable]
-        $ScriptParameters,
-
-        [Int]
-        [ValidateRange(1,100)] 
-        $Threads = 20,
-
-        [Switch]
-        $NoImports
-    )
-
-    begin {
-
-        if ($PSBoundParameters['Debug']) {
-            $DebugPreference = 'Continue'
-        }
-
-        Write-Verbose "[*] Total number of hosts: $($ComputerName.count)"
-
-        # Adapted from:
-        #   http://powershell.org/wp/forums/topic/invpke-parallel-need-help-to-clone-the-current-runspace/
-        $SessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-        $SessionState.ApartmentState = [System.Threading.Thread]::CurrentThread.GetApartmentState()
-
-        # import the current session state's variables and functions so the chained PowerView
-        #   functionality can be used by the threaded blocks
-        if(!$NoImports) {
-
-            # grab all the current variables for this runspace
-            $MyVars = Get-Variable -Scope 2
-
-            # these Variables are added by Runspace.Open() Method and produce Stop errors if you add them twice
-            $VorbiddenVars = @("?","args","ConsoleFileName","Error","ExecutionContext","false","HOME","Host","input","InputObject","MaximumAliasCount","MaximumDriveCount","MaximumErrorCount","MaximumFunctionCount","MaximumHistoryCount","MaximumVariableCount","MyInvocation","null","PID","PSBoundParameters","PSCommandPath","PSCulture","PSDefaultParameterValues","PSHOME","PSScriptRoot","PSUICulture","PSVersionTable","PWD","ShellId","SynchronizedHash","true")
-
-            # Add Variables from Parent Scope (current runspace) into the InitialSessionState
-            ForEach($Var in $MyVars) {
-                if($VorbiddenVars -NotContains $Var.Name) {
-                $SessionState.Variables.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList $Var.name,$Var.Value,$Var.description,$Var.options,$Var.attributes))
-                }
-            }
-
-            # Add Functions from current runspace to the InitialSessionState
-            ForEach($Function in (Get-ChildItem Function:)) {
-                $SessionState.Commands.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList $Function.Name, $Function.Definition))
-            }
-        }
-
-        # threading adapted from
-        # https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1#L407
-        #   Thanks Carlos!
-
-        # create a pool of maxThread runspaces
-        $Pool = [runspacefactory]::CreateRunspacePool(1, $Threads, $SessionState, $Host)
-        $Pool.Open()
-
-        $method = $null
-        ForEach ($m in [PowerShell].GetMethods() | Where-Object { $_.Name -eq "BeginInvoke" }) {
-            $methodParameters = $m.GetParameters()
-            if (($methodParameters.Count -eq 2) -and $methodParameters[0].Name -eq "input" -and $methodParameters[1].Name -eq "output") {
-                $method = $m.MakeGenericMethod([Object], [Object])
-                break
-            }
-        }
-
-        $Jobs = @()
-    }
-
-    process {
-
-        ForEach ($Computer in $ComputerName) {
-
-            # make sure we get a server name
-            if ($Computer -ne '') {
-                # Write-Verbose "[*] Enumerating server $Computer ($($Counter+1) of $($ComputerName.count))"
-
-                While ($($Pool.GetAvailableRunspaces()) -le 0) {
-                    Start-Sleep -MilliSeconds 500
-                }
-
-                # create a "powershell pipeline runner"
-                $p = [powershell]::create()
-
-                $p.runspacepool = $Pool
-
-                # add the script block + arguments
-                $Null = $p.AddScript($ScriptBlock).AddParameter('ComputerName', $Computer)
-                if($ScriptParameters) {
-                    ForEach ($Param in $ScriptParameters.GetEnumerator()) {
-                        $Null = $p.AddParameter($Param.Name, $Param.Value)
-                    }
-                }
-
-                $o = New-Object Management.Automation.PSDataCollection[Object]
-
-                $Jobs += @{
-                    PS = $p
-                    Output = $o
-                    Result = $method.Invoke($p, @($null, [Management.Automation.PSDataCollection[Object]]$o))
-                }
-            }
-        }
-    }
-
-    end {
-        Write-Verbose "Waiting for threads to finish..."
-
-        Do {
-            ForEach ($Job in $Jobs) {
-                $Job.Output.ReadAll()
-            }
-        } While (($Jobs | Where-Object { ! $_.Result.IsCompleted }).Count -gt 0)
-
-        ForEach ($Job in $Jobs) {
-            $Job.PS.Dispose()
-        }
-
-        $Pool.Dispose()
-        Write-Verbose "All threads completed!"
-    }
-}
-
-
-function New-InMemoryModule
-{
-<#
-    .SYNOPSIS
-
-        Creates an in-memory assembly and module
-
-        Author: Matthew Graeber (@mattifestation)
-        License: BSD 3-Clause
-        Required Dependencies: None
-        Optional Dependencies: None
+    Helper function to simplify creating dynamic parameters
 
     .DESCRIPTION
+    Helper function to simplify creating dynamic parameters.
 
-        When defining custom enums, structs, and unmanaged functions, it is
-        necessary to associate to an assembly module. This helper function
-        creates an in-memory module that can be passed to the 'enum',
-        'struct', and Add-Win32Type functions.
+    Example use cases:
+        Include parameters only if your environment dictates it
+        Include parameters depending on the value of a user-specified parameter
+        Provide tab completion and intellisense for parameters, depending on the environment
 
-    .PARAMETER ModuleName
+    Please keep in mind that all dynamic parameters you create, will not have corresponding variables created.
+        Use New-DynamicParameter with 'CreateVariables' switch in your main code block,
+        ('Process' for advanced functions) to create those variables.
+        Alternatively, manually reference $PSBoundParameters for the dynamic parameter value.
 
-        Specifies the desired name for the in-memory assembly and module. If
-        ModuleName is not provided, it will default to a GUID.
+    This function has two operating modes:
 
-    .EXAMPLE
+    1. All dynamic parameters created in one pass using pipeline input to the function. This mode allows to create dynamic parameters en masse,
+    with one function call. There is no need to create and maintain custom RuntimeDefinedParameterDictionary.
 
-        $Module = New-InMemoryModule -ModuleName Win32
-#>
-
-    Param
-    (
-        [Parameter(Position = 0)]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $ModuleName = [Guid]::NewGuid().ToString()
-    )
-
-    $LoadedAssemblies = [AppDomain]::CurrentDomain.GetAssemblies()
-
-    ForEach ($Assembly in $LoadedAssemblies) {
-        if ($Assembly.FullName -and ($Assembly.FullName.Split(',')[0] -eq $ModuleName)) {
-            return $Assembly
-        }
-    }
-
-    $DynAssembly = New-Object Reflection.AssemblyName($ModuleName)
-    $Domain = [AppDomain]::CurrentDomain
-    $AssemblyBuilder = $Domain.DefineDynamicAssembly($DynAssembly, 'Run')
-    $ModuleBuilder = $AssemblyBuilder.DefineDynamicModule($ModuleName, $False)
-
-    return $ModuleBuilder
-}
-
-
-function psenum
-{
-<#
-    .SYNOPSIS
-
-        Creates an in-memory enumeration for use in your PowerShell session.
-
-        Author: Matthew Graeber (@mattifestation)
-        License: BSD 3-Clause
-        Required Dependencies: None
-        Optional Dependencies: None
-     
-    .DESCRIPTION
-
-        The 'psenum' function facilitates the creation of enums entirely in
-        memory using as close to a "C style" as PowerShell will allow.
-
-    .PARAMETER Module
-
-        The in-memory module that will host the enum. Use
-        New-InMemoryModule to define an in-memory module.
-
-    .PARAMETER FullName
-
-        The fully-qualified name of the enum.
-
-    .PARAMETER Type
-
-        The type of each enum element.
-
-    .PARAMETER EnumElements
-
-        A hashtable of enum elements.
-
-    .PARAMETER Bitfield
-
-        Specifies that the enum should be treated as a bitfield.
-
-    .EXAMPLE
-
-        $Mod = New-InMemoryModule -ModuleName Win32
-
-        $ImageSubsystem = psenum $Mod PE.IMAGE_SUBSYSTEM UInt16 @{
-            UNKNOWN =                  0
-            NATIVE =                   1 # Image doesn't require a subsystem.
-            WINDOWS_GUI =              2 # Image runs in the Windows GUI subsystem.
-            WINDOWS_CUI =              3 # Image runs in the Windows character subsystem.
-            OS2_CUI =                  5 # Image runs in the OS/2 character subsystem.
-            POSIX_CUI =                7 # Image runs in the Posix character subsystem.
-            NATIVE_WINDOWS =           8 # Image is a native Win9x driver.
-            WINDOWS_CE_GUI =           9 # Image runs in the Windows CE subsystem.
-            EFI_APPLICATION =          10
-            EFI_BOOT_SERVICE_DRIVER =  11
-            EFI_RUNTIME_DRIVER =       12
-            EFI_ROM =                  13
-            XBOX =                     14
-            WINDOWS_BOOT_APPLICATION = 16
-        }
+    2. Dynamic parameters are created by separate function calls and added to the RuntimeDefinedParameterDictionary you created beforehand.
+    Then you output this RuntimeDefinedParameterDictionary to the pipeline. This allows more fine-grained control of the dynamic parameters,
+    with custom conditions and so on.
 
     .NOTES
+    Credits to jrich523 and ramblingcookiemonster for their initial code and inspiration:
+        https://github.com/RamblingCookieMonster/PowerShell/blob/master/New-DynamicParam.ps1
+        http://ramblingcookiemonster.wordpress.com/2014/11/27/quick-hits-credentials-and-dynamic-parameters/
+        http://jrich523.wordpress.com/2013/05/30/powershell-simple-way-to-add-dynamic-parameters-to-advanced-function/
 
-        PowerShell purists may disagree with the naming of this function but
-        again, this was developed in such a way so as to emulate a "C style"
-        definition as closely as possible. Sorry, I'm not going to name it
-        New-Enum. :P
-#>
+    Credit to BM for alias and type parameters and their handling
 
-    [OutputType([Type])]
-    Param (
-        [Parameter(Position = 0, Mandatory = $True)]
-        [ValidateScript({($_ -is [Reflection.Emit.ModuleBuilder]) -or ($_ -is [Reflection.Assembly])})]
-        $Module,
+    .PARAMETER Name
+    Name of the dynamic parameter
 
-        [Parameter(Position = 1, Mandatory = $True)]
+    .PARAMETER Type
+    Type for the dynamic parameter.  Default is string
+
+    .PARAMETER Alias
+    If specified, one or more aliases to assign to the dynamic parameter
+
+    .PARAMETER Mandatory
+    If specified, set the Mandatory attribute for this dynamic parameter
+
+    .PARAMETER Position
+    If specified, set the Position attribute for this dynamic parameter
+
+    .PARAMETER HelpMessage
+    If specified, set the HelpMessage for this dynamic parameter
+
+    .PARAMETER DontShow
+    If specified, set the DontShow for this dynamic parameter.
+    This is the new PowerShell 4.0 attribute that hides parameter from tab-completion.
+    http://www.powershellmagazine.com/2013/07/29/pstip-hiding-parameters-from-tab-completion/
+
+    .PARAMETER ValueFromPipeline
+    If specified, set the ValueFromPipeline attribute for this dynamic parameter
+
+    .PARAMETER ValueFromPipelineByPropertyName
+    If specified, set the ValueFromPipelineByPropertyName attribute for this dynamic parameter
+
+    .PARAMETER ValueFromRemainingArguments
+    If specified, set the ValueFromRemainingArguments attribute for this dynamic parameter
+
+    .PARAMETER ParameterSetName
+    If specified, set the ParameterSet attribute for this dynamic parameter. By default parameter is added to all parameters sets.
+
+    .PARAMETER AllowNull
+    If specified, set the AllowNull attribute of this dynamic parameter
+
+    .PARAMETER AllowEmptyString
+    If specified, set the AllowEmptyString attribute of this dynamic parameter
+
+    .PARAMETER AllowEmptyCollection
+    If specified, set the AllowEmptyCollection attribute of this dynamic parameter
+
+    .PARAMETER ValidateNotNull
+    If specified, set the ValidateNotNull attribute of this dynamic parameter
+
+    .PARAMETER ValidateNotNullOrEmpty
+    If specified, set the ValidateNotNullOrEmpty attribute of this dynamic parameter
+
+    .PARAMETER ValidateRange
+    If specified, set the ValidateRange attribute of this dynamic parameter
+
+    .PARAMETER ValidateLength
+    If specified, set the ValidateLength attribute of this dynamic parameter
+
+    .PARAMETER ValidatePattern
+    If specified, set the ValidatePattern attribute of this dynamic parameter
+
+    .PARAMETER ValidateScript
+    If specified, set the ValidateScript attribute of this dynamic parameter
+
+    .PARAMETER ValidateSet
+    If specified, set the ValidateSet attribute of this dynamic parameter
+
+    .PARAMETER Dictionary
+    If specified, add resulting RuntimeDefinedParameter to an existing RuntimeDefinedParameterDictionary.
+    Appropriate for custom dynamic parameters creation.
+
+    If not specified, create and return a RuntimeDefinedParameterDictionary
+    Aappropriate for a simple dynamic parameter creation.
+
+    .EXAMPLE
+    Create one dynamic parameter.
+
+    This example illustrates the use of New-DynamicParameter to create a single dynamic parameter.
+    The Drive's parameter ValidateSet is populated with all available volumes on the computer for handy tab completion / intellisense.
+
+    Usage: Get-FreeSpace -Drive <tab>
+
+    function Get-FreeSpace
+    {
+        [CmdletBinding()]
+        Param()
+        DynamicParam
+        {
+            # Get drive names for ValidateSet attribute
+            $DriveList = ([System.IO.DriveInfo]::GetDrives()).Name
+
+            # Create new dynamic parameter
+            New-DynamicParameter -Name Drive -ValidateSet $DriveList -Type ([array]) -Position 0 -Mandatory
+        }
+
+        Process
+        {
+            # Dynamic parameters don't have corresponding variables created,
+            # you need to call New-DynamicParameter with CreateVariables switch to fix that.
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+
+            $DriveInfo = [System.IO.DriveInfo]::GetDrives() | Where-Object {$Drive -contains $_.Name}
+            $DriveInfo |
+                ForEach-Object {
+                    if(!$_.TotalFreeSpace)
+                    {
+                        $FreePct = 0
+                    }
+                    else
+                    {
+                        $FreePct = [System.Math]::Round(($_.TotalSize / $_.TotalFreeSpace), 2)
+                    }
+                    New-Object -TypeName psobject -Property @{
+                        Drive = $_.Name
+                        DriveType = $_.DriveType
+                        'Free(%)' = $FreePct
+                    }
+                }
+        }
+    }
+
+    .EXAMPLE
+    Create several dynamic parameters not using custom RuntimeDefinedParameterDictionary (requires piping).
+
+    In this example two dynamic parameters are created. Each parameter belongs to the different parameter set, so they are mutually exclusive.
+
+    The Drive's parameter ValidateSet is populated with all available volumes on the computer.
+    The DriveType's parameter ValidateSet is populated with all available drive types.
+
+    Usage: Get-FreeSpace -Drive <tab>
+        or
+    Usage: Get-FreeSpace -DriveType <tab>
+
+    Parameters are defined in the array of hashtables, which is then piped through the New-Object to create PSObject and pass it to the New-DynamicParameter function.
+    Because of piping, New-DynamicParameter function is able to create all parameters at once, thus eliminating need for you to create and pass external RuntimeDefinedParameterDictionary to it.
+
+    function Get-FreeSpace
+    {
+        [CmdletBinding()]
+        Param()
+        DynamicParam
+        {
+            # Array of hashtables that hold values for dynamic parameters
+            $DynamicParameters = @(
+                @{
+                    Name = 'Drive'
+                    Type = [array]
+                    Position = 0
+                    Mandatory = $true
+                    ValidateSet = ([System.IO.DriveInfo]::GetDrives()).Name
+                    ParameterSetName = 'Drive'
+                },
+                @{
+                    Name = 'DriveType'
+                    Type = [array]
+                    Position = 0
+                    Mandatory = $true
+                    ValidateSet = [System.Enum]::GetNames('System.IO.DriveType')
+                    ParameterSetName = 'DriveType'
+                }
+            )
+
+            # Convert hashtables to PSObjects and pipe them to the New-DynamicParameter,
+            # to create all dynamic paramters in one function call.
+            $DynamicParameters | ForEach-Object {New-Object PSObject -Property $_} | New-DynamicParameter
+        }
+        Process
+        {
+            # Dynamic parameters don't have corresponding variables created,
+            # you need to call New-DynamicParameter with CreateVariables switch to fix that.
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+
+            if($Drive)
+            {
+                $Filter = {$Drive -contains $_.Name}
+            }
+            elseif($DriveType)
+            {
+                $Filter =  {$DriveType -contains  $_.DriveType}
+            }
+
+            $DriveInfo = [System.IO.DriveInfo]::GetDrives() | Where-Object $Filter
+            $DriveInfo |
+                ForEach-Object {
+                    if(!$_.TotalFreeSpace)
+                    {
+                        $FreePct = 0
+                    }
+                    else
+                    {
+                        $FreePct = [System.Math]::Round(($_.TotalSize / $_.TotalFreeSpace), 2)
+                    }
+                    New-Object -TypeName psobject -Property @{
+                        Drive = $_.Name
+                        DriveType = $_.DriveType
+                        'Free(%)' = $FreePct
+                    }
+                }
+        }
+    }
+
+    .EXAMPLE
+    Create several dynamic parameters, with multiple Parameter Sets, not using custom RuntimeDefinedParameterDictionary (requires piping).
+
+    In this example three dynamic parameters are created. Two of the parameters are belong to the different parameter set, so they are mutually exclusive.
+    One of the parameters belongs to both parameter sets.
+
+    The Drive's parameter ValidateSet is populated with all available volumes on the computer.
+    The DriveType's parameter ValidateSet is populated with all available drive types.
+    The DriveType's parameter ValidateSet is populated with all available drive types.
+    The Precision's parameter controls number of digits after decimal separator for Free Space percentage.
+
+    Usage: Get-FreeSpace -Drive <tab> -Precision 2
+        or
+    Usage: Get-FreeSpace -DriveType <tab> -Precision 2
+
+    Parameters are defined in the array of hashtables, which is then piped through the New-Object to create PSObject and pass it to the New-DynamicParameter function.
+    If parameter with the same name already exist in the RuntimeDefinedParameterDictionary, a new Parameter Set is added to it.
+    Because of piping, New-DynamicParameter function is able to create all parameters at once, thus eliminating need for you to create and pass external RuntimeDefinedParameterDictionary to it.
+
+    function Get-FreeSpace
+    {
+        [CmdletBinding()]
+        Param()
+        DynamicParam
+        {
+            # Array of hashtables that hold values for dynamic parameters
+            $DynamicParameters = @(
+                @{
+                    Name = 'Drive'
+                    Type = [array]
+                    Position = 0
+                    Mandatory = $true
+                    ValidateSet = ([System.IO.DriveInfo]::GetDrives()).Name
+                    ParameterSetName = 'Drive'
+                },
+                @{
+                    Name = 'DriveType'
+                    Type = [array]
+                    Position = 0
+                    Mandatory = $true
+                    ValidateSet = [System.Enum]::GetNames('System.IO.DriveType')
+                    ParameterSetName = 'DriveType'
+                },
+                @{
+                    Name = 'Precision'
+                    Type = [int]
+                    # This will add a Drive parameter set to the parameter
+                    Position = 1
+                    ParameterSetName = 'Drive'
+                },
+                @{
+                    Name = 'Precision'
+                    # Because the parameter already exits in the RuntimeDefinedParameterDictionary,
+                    # this will add a DriveType parameter set to the parameter.
+                    Position = 1
+                    ParameterSetName = 'DriveType'
+                }
+            )
+
+            # Convert hashtables to PSObjects and pipe them to the New-DynamicParameter,
+            # to create all dynamic paramters in one function call.
+            $DynamicParameters | ForEach-Object {New-Object PSObject -Property $_} | New-DynamicParameter
+        }
+        Process
+        {
+            # Dynamic parameters don't have corresponding variables created,
+            # you need to call New-DynamicParameter with CreateVariables switch to fix that.
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+
+            if($Drive)
+            {
+                $Filter = {$Drive -contains $_.Name}
+            }
+            elseif($DriveType)
+            {
+                $Filter = {$DriveType -contains  $_.DriveType}
+            }
+
+            if(!$Precision)
+            {
+                $Precision = 2
+            }
+
+            $DriveInfo = [System.IO.DriveInfo]::GetDrives() | Where-Object $Filter
+            $DriveInfo |
+                ForEach-Object {
+                    if(!$_.TotalFreeSpace)
+                    {
+                        $FreePct = 0
+                    }
+                    else
+                    {
+                        $FreePct = [System.Math]::Round(($_.TotalSize / $_.TotalFreeSpace), $Precision)
+                    }
+                    New-Object -TypeName psobject -Property @{
+                        Drive = $_.Name
+                        DriveType = $_.DriveType
+                        'Free(%)' = $FreePct
+                    }
+                }
+        }
+    }
+
+    .Example
+    Create dynamic parameters using custom dictionary.
+
+    In case you need more control, use custom dictionary to precisely choose what dynamic parameters to create and when.
+    The example below will create DriveType dynamic parameter only if today is not a Friday:
+
+    function Get-FreeSpace
+    {
+        [CmdletBinding()]
+        Param()
+        DynamicParam
+        {
+            $Drive = @{
+                Name = 'Drive'
+                Type = [array]
+                Position = 0
+                Mandatory = $true
+                ValidateSet = ([System.IO.DriveInfo]::GetDrives()).Name
+                ParameterSetName = 'Drive'
+            }
+
+            $DriveType =  @{
+                Name = 'DriveType'
+                Type = [array]
+                Position = 0
+                Mandatory = $true
+                ValidateSet = [System.Enum]::GetNames('System.IO.DriveType')
+                ParameterSetName = 'DriveType'
+            }
+
+            # Create dictionary
+            $DynamicParameters = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+
+            # Add new dynamic parameter to dictionary
+            New-DynamicParameter @Drive -Dictionary $DynamicParameters
+
+            # Add another dynamic parameter to dictionary, only if today is not a Friday
+            if((Get-Date).DayOfWeek -ne [DayOfWeek]::Friday)
+            {
+                New-DynamicParameter @DriveType -Dictionary $DynamicParameters
+            }
+
+            # Return dictionary with dynamic parameters
+            $DynamicParameters
+        }
+        Process
+        {
+            # Dynamic parameters don't have corresponding variables created,
+            # you need to call New-DynamicParameter with CreateVariables switch to fix that.
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+
+            if($Drive)
+            {
+                $Filter = {$Drive -contains $_.Name}
+            }
+            elseif($DriveType)
+            {
+                $Filter =  {$DriveType -contains  $_.DriveType}
+            }
+
+            $DriveInfo = [System.IO.DriveInfo]::GetDrives() | Where-Object $Filter
+            $DriveInfo |
+                ForEach-Object {
+                    if(!$_.TotalFreeSpace)
+                    {
+                        $FreePct = 0
+                    }
+                    else
+                    {
+                        $FreePct = [System.Math]::Round(($_.TotalSize / $_.TotalFreeSpace), 2)
+                    }
+                    New-Object -TypeName psobject -Property @{
+                        Drive = $_.Name
+                        DriveType = $_.DriveType
+                        'Free(%)' = $FreePct
+                    }
+                }
+        }
+    }
+    #>
+    [CmdletBinding(PositionalBinding = $false, DefaultParameterSetName = 'DynamicParameter')]
+    Param
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
         [ValidateNotNullOrEmpty()]
-        [String]
-        $FullName,
+        [string]$Name,
 
-        [Parameter(Position = 2, Mandatory = $True)]
-        [Type]
-        $Type,
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [System.Type]$Type = [int],
 
-        [Parameter(Position = 3, Mandatory = $True)]
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [string[]]$Alias,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$Mandatory,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [int]$Position,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [string]$HelpMessage,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$DontShow,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$ValueFromPipeline,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$ValueFromPipelineByPropertyName,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$ValueFromRemainingArguments,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [string]$ParameterSetName = '__AllParameterSets',
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$AllowNull,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$AllowEmptyString,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$AllowEmptyCollection,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$ValidateNotNull,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [switch]$ValidateNotNullOrEmpty,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateCount(2, 2)]
+        [int[]]$ValidateCount,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateCount(2, 2)]
+        [int[]]$ValidateRange,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateCount(2, 2)]
+        [int[]]$ValidateLength,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
         [ValidateNotNullOrEmpty()]
-        [Hashtable]
-        $EnumElements,
+        [string]$ValidatePattern,
 
-        [Switch]
-        $Bitfield
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateNotNullOrEmpty()]
+        [scriptblock]$ValidateScript,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$ValidateSet,
+
+        [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'DynamicParameter')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript( {
+                if (!($_ -is [System.Management.Automation.RuntimeDefinedParameterDictionary])) {
+                    Throw 'Dictionary must be a System.Management.Automation.RuntimeDefinedParameterDictionary object'
+                }
+                $true
+            })]
+        $Dictionary = $false,
+
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, ParameterSetName = 'CreateVariables')]
+        [switch]$CreateVariables,
+
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, ParameterSetName = 'CreateVariables')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript( {
+                # System.Management.Automation.PSBoundParametersDictionary is an internal sealed class,
+                # so one can't use PowerShell's '-is' operator to validate type.
+                if ($_.GetType().Name -ne 'PSBoundParametersDictionary') {
+                    Throw 'BoundParameters must be a System.Management.Automation.PSBoundParametersDictionary object'
+                }
+                $true
+            })]
+        $BoundParameters
     )
 
-    if ($Module -is [Reflection.Assembly])
-    {
-        return ($Module.GetType($FullName))
+    Begin {
+        Write-Verbose 'Creating new dynamic parameters dictionary'
+        $InternalDictionary = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameterDictionary
+
+        Write-Verbose 'Getting common parameters'
+        function _temp { [CmdletBinding()] Param() }
+        $CommonParameters = (Get-Command _temp).Parameters.Keys
     }
 
-    $EnumType = $Type -as [Type]
+    Process {
+        if ($CreateVariables) {
+            Write-Verbose 'Creating variables from bound parameters'
+            Write-Debug 'Picking out bound parameters that are not in common parameters set'
+            $BoundKeys = $BoundParameters.Keys | Where-Object { $CommonParameters -notcontains $_ }
 
-    $EnumBuilder = $Module.DefineEnum($FullName, 'Public', $EnumType)
+            foreach ($Parameter in $BoundKeys) {
+                Write-Debug "Setting existing variable for dynamic parameter '$Parameter' with value '$($BoundParameters.$Parameter)'"
+                Set-Variable -Name $Parameter -Value $BoundParameters.$Parameter -Scope 1 -Force
+            }
+        }
+        else {
+            Write-Verbose 'Looking for cached bound parameters'
+            Write-Debug 'More info: https://beatcracker.wordpress.com/2014/12/18/psboundparameters-pipeline-and-the-valuefrompipelinebypropertyname-parameter-attribute'
+            $StaleKeys = @()
+            $StaleKeys = $PSBoundParameters.GetEnumerator() |
+                ForEach-Object {
+                if ($_.Value.PSobject.Methods.Name -match '^Equals$') {
+                    # If object has Equals, compare bound key and variable using it
+                    if (!$_.Value.Equals((Get-Variable -Name $_.Key -ValueOnly -Scope 0))) {
+                        $_.Key
+                    }
+                }
+                else {
+                    # If object doesn't has Equals (e.g. $null), fallback to the PowerShell's -ne operator
+                    if ($_.Value -ne (Get-Variable -Name $_.Key -ValueOnly -Scope 0)) {
+                        $_.Key
+                    }
+                }
+            }
+            if ($StaleKeys) {
+                [string[]]"Found $($StaleKeys.Count) cached bound parameters:" + $StaleKeys | Write-Debug
+                Write-Verbose 'Removing cached bound parameters'
+                $StaleKeys | ForEach-Object {[void]$PSBoundParameters.Remove($_)}
+            }
 
-    if ($Bitfield)
-    {
-        $FlagsConstructor = [FlagsAttribute].GetConstructor(@())
-        $FlagsCustomAttribute = New-Object Reflection.Emit.CustomAttributeBuilder($FlagsConstructor, @())
-        $EnumBuilder.SetCustomAttribute($FlagsCustomAttribute)
+            # Since we rely solely on $PSBoundParameters, we don't have access to default values for unbound parameters
+            Write-Verbose 'Looking for unbound parameters with default values'
+
+            Write-Debug 'Getting unbound parameters list'
+            $UnboundParameters = (Get-Command -Name ($PSCmdlet.MyInvocation.InvocationName)).Parameters.GetEnumerator()  |
+                # Find parameters that are belong to the current parameter set
+            Where-Object { $_.Value.ParameterSets.Keys -contains $PsCmdlet.ParameterSetName } |
+                Select-Object -ExpandProperty Key |
+                # Find unbound parameters in the current parameter set
+												Where-Object { $PSBoundParameters.Keys -notcontains $_ }
+
+            # Even if parameter is not bound, corresponding variable is created with parameter's default value (if specified)
+            Write-Debug 'Trying to get variables with default parameter value and create a new bound parameter''s'
+            $tmp = $null
+            foreach ($Parameter in $UnboundParameters) {
+                $DefaultValue = Get-Variable -Name $Parameter -ValueOnly -Scope 0
+                if (!$PSBoundParameters.TryGetValue($Parameter, [ref]$tmp) -and $DefaultValue) {
+                    $PSBoundParameters.$Parameter = $DefaultValue
+                    Write-Debug "Added new parameter '$Parameter' with value '$DefaultValue'"
+                }
+            }
+
+            if ($Dictionary) {
+                Write-Verbose 'Using external dynamic parameter dictionary'
+                $DPDictionary = $Dictionary
+            }
+            else {
+                Write-Verbose 'Using internal dynamic parameter dictionary'
+                $DPDictionary = $InternalDictionary
+            }
+
+            Write-Verbose "Creating new dynamic parameter: $Name"
+
+            # Shortcut for getting local variables
+            $GetVar = {Get-Variable -Name $_ -ValueOnly -Scope 0}
+
+            # Strings to match attributes and validation arguments
+            $AttributeRegex = '^(Mandatory|Position|ParameterSetName|DontShow|HelpMessage|ValueFromPipeline|ValueFromPipelineByPropertyName|ValueFromRemainingArguments)$'
+            $ValidationRegex = '^(AllowNull|AllowEmptyString|AllowEmptyCollection|ValidateCount|ValidateLength|ValidatePattern|ValidateRange|ValidateScript|ValidateSet|ValidateNotNull|ValidateNotNullOrEmpty)$'
+            $AliasRegex = '^Alias$'
+
+            Write-Debug 'Creating new parameter''s attirubutes object'
+            $ParameterAttribute = New-Object -TypeName System.Management.Automation.ParameterAttribute
+
+            Write-Debug 'Looping through the bound parameters, setting attirubutes...'
+            switch -regex ($PSBoundParameters.Keys) {
+                $AttributeRegex {
+                    Try {
+                        $ParameterAttribute.$_ = . $GetVar
+                        Write-Debug "Added new parameter attribute: $_"
+                    }
+                    Catch {
+                        $_
+                    }
+                    continue
+                }
+            }
+
+            if ($DPDictionary.Keys -contains $Name) {
+                Write-Verbose "Dynamic parameter '$Name' already exist, adding another parameter set to it"
+                $DPDictionary.$Name.Attributes.Add($ParameterAttribute)
+            }
+            else {
+                Write-Verbose "Dynamic parameter '$Name' doesn't exist, creating"
+
+                Write-Debug 'Creating new attribute collection object'
+                $AttributeCollection = New-Object -TypeName Collections.ObjectModel.Collection[System.Attribute]
+
+                Write-Debug 'Looping through bound parameters, adding attributes'
+                switch -regex ($PSBoundParameters.Keys) {
+                    $ValidationRegex {
+                        Try {
+                            $ParameterOptions = New-Object -TypeName "System.Management.Automation.${_}Attribute" -ArgumentList (. $GetVar) -ErrorAction Stop
+                            $AttributeCollection.Add($ParameterOptions)
+                            Write-Debug "Added attribute: $_"
+                        }
+                        Catch {
+                            $_
+                        }
+                        continue
+                    }
+
+                    $AliasRegex {
+                        Try {
+                            $ParameterAlias = New-Object -TypeName System.Management.Automation.AliasAttribute -ArgumentList (. $GetVar) -ErrorAction Stop
+                            $AttributeCollection.Add($ParameterAlias)
+                            Write-Debug "Added alias: $_"
+                            continue
+                        }
+                        Catch {
+                            $_
+                        }
+                    }
+                }
+
+                Write-Debug 'Adding attributes to the attribute collection'
+                $AttributeCollection.Add($ParameterAttribute)
+
+                Write-Debug 'Finishing creation of the new dynamic parameter'
+                $Parameter = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameter -ArgumentList @($Name, $Type, $AttributeCollection)
+
+                Write-Debug 'Adding dynamic parameter to the dynamic parameter dictionary'
+                $DPDictionary.Add($Name, $Parameter)
+            }
+        }
     }
 
-    ForEach ($Key in $EnumElements.Keys)
-    {
-        # Apply the specified enum type to each element
-        $Null = $EnumBuilder.DefineLiteral($Key, $EnumElements[$Key] -as $EnumType)
+    End {
+        if (!$CreateVariables -and !$Dictionary) {
+            Write-Verbose 'Writing dynamic parameter dictionary to the pipeline'
+            $DPDictionary
+        }
     }
-
-    $EnumBuilder.CreateType()
 }
 
+Function New-ProxyFunction {
+    <#
+    .SYNOPSIS
+        Proxy function dynamic parameter block
+    .DESCRIPTION
+        The dynamic parameter block of a proxy function. This block can be used to copy a proxy function target's parameters, regardless of changes from version to version.
+    #>
+    [System.Diagnostics.DebuggerStepThrough()]
+    param(
+        # The name of the command being proxied.
+        [System.String]
+        $CommandName,
+
+        # The type of the command being proxied. Valid values include 'Cmdlet' or 'Function'.
+        [System.Management.Automation.CommandTypes]
+        $CommandType
+    )
+    try {
+        # Look up the command being proxied.
+        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand($CommandName, $CommandType)
+
+        #If the command was not found, throw an appropriate command not found exception.
+        if (-not $wrappedCmd) {
+            $PSCmdlet.ThrowCommandNotFoundError($CommandName, $PSCmdlet.MyInvocation.MyCommand.Name)
+        }
+
+        # Lookup the command metadata.
+        $metadata = New-Object -TypeName System.Management.Automation.CommandMetadata -ArgumentList $wrappedCmd
+
+        # Create dynamic parameters, one for each parameter on the command being proxied.
+        $dynamicDictionary = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameterDictionary
+        foreach ($key in $metadata.Parameters.Keys) {
+            $parameter = $metadata.Parameters[$key]
+            $dynamicParameter = New-Object -TypeName System.Management.Automation.RuntimeDefinedParameter -ArgumentList @(
+                $parameter.Name
+                $parameter.ParameterType
+                ,$parameter.Attributes
+            )
+            $dynamicDictionary.Add($parameter.Name, $dynamicParameter)
+        }
+        $dynamicDictionary
+
+    }
+    catch {
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
 
 function Split-Credential {
     <#
@@ -2401,274 +2254,6 @@ function Split-Credential {
     }
 
     $SplitCreds
-}
-
-
-function struct
-{
-<#
-    .SYNOPSIS
-
-        Creates an in-memory struct for use in your PowerShell session.
-
-        Author: Matthew Graeber (@mattifestation)
-        License: BSD 3-Clause
-        Required Dependencies: None
-        Optional Dependencies: field
-
-    .DESCRIPTION
-
-        The 'struct' function facilitates the creation of structs entirely in
-        memory using as close to a "C style" as PowerShell will allow. Struct
-        fields are specified using a hashtable where each field of the struct
-        is comprosed of the order in which it should be defined, its .NET
-        type, and optionally, its offset and special marshaling attributes.
-
-        One of the features of 'struct' is that after your struct is defined,
-        it will come with a built-in GetSize method as well as an explicit
-        converter so that you can easily cast an IntPtr to the struct without
-        relying upon calling SizeOf and/or PtrToStructure in the Marshal
-        class.
-
-    .PARAMETER Module
-
-        The in-memory module that will host the struct. Use
-        New-InMemoryModule to define an in-memory module.
-
-    .PARAMETER FullName
-
-        The fully-qualified name of the struct.
-
-    .PARAMETER StructFields
-
-        A hashtable of fields. Use the 'field' helper function to ease
-        defining each field.
-
-    .PARAMETER PackingSize
-
-        Specifies the memory alignment of fields.
-
-    .PARAMETER ExplicitLayout
-
-        Indicates that an explicit offset for each field will be specified.
-
-    .EXAMPLE
-
-        $Mod = New-InMemoryModule -ModuleName Win32
-
-        $ImageDosSignature = psenum $Mod PE.IMAGE_DOS_SIGNATURE UInt16 @{
-            DOS_SIGNATURE =    0x5A4D
-            OS2_SIGNATURE =    0x454E
-            OS2_SIGNATURE_LE = 0x454C
-            VXD_SIGNATURE =    0x454C
-        }
-
-        $ImageDosHeader = struct $Mod PE.IMAGE_DOS_HEADER @{
-            e_magic =    field 0 $ImageDosSignature
-            e_cblp =     field 1 UInt16
-            e_cp =       field 2 UInt16
-            e_crlc =     field 3 UInt16
-            e_cparhdr =  field 4 UInt16
-            e_minalloc = field 5 UInt16
-            e_maxalloc = field 6 UInt16
-            e_ss =       field 7 UInt16
-            e_sp =       field 8 UInt16
-            e_csum =     field 9 UInt16
-            e_ip =       field 10 UInt16
-            e_cs =       field 11 UInt16
-            e_lfarlc =   field 12 UInt16
-            e_ovno =     field 13 UInt16
-            e_res =      field 14 UInt16[] -MarshalAs @('ByValArray', 4)
-            e_oemid =    field 15 UInt16
-            e_oeminfo =  field 16 UInt16
-            e_res2 =     field 17 UInt16[] -MarshalAs @('ByValArray', 10)
-            e_lfanew =   field 18 Int32
-        }
-
-        # Example of using an explicit layout in order to create a union.
-        $TestUnion = struct $Mod TestUnion @{
-            field1 = field 0 UInt32 0
-            field2 = field 1 IntPtr 0
-        } -ExplicitLayout
-
-    .NOTES
-
-        PowerShell purists may disagree with the naming of this function but
-        again, this was developed in such a way so as to emulate a "C style"
-        definition as closely as possible. Sorry, I'm not going to name it
-        New-Struct. :P
-#>
-
-    [OutputType([Type])]
-    Param
-    (
-        [Parameter(Position = 1, Mandatory = $True)]
-        [ValidateScript({($_ -is [Reflection.Emit.ModuleBuilder]) -or ($_ -is [Reflection.Assembly])})]
-        $Module,
-
-        [Parameter(Position = 2, Mandatory = $True)]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $FullName,
-
-        [Parameter(Position = 3, Mandatory = $True)]
-        [ValidateNotNullOrEmpty()]
-        [Hashtable]
-        $StructFields,
-
-        [Reflection.Emit.PackingSize]
-        $PackingSize = [Reflection.Emit.PackingSize]::Unspecified,
-
-        [Switch]
-        $ExplicitLayout
-    )
-
-    if ($Module -is [Reflection.Assembly])
-    {
-        return ($Module.GetType($FullName))
-    }
-
-    [Reflection.TypeAttributes] $StructAttributes = 'AnsiClass,
-        Class,
-        Public,
-        Sealed,
-        BeforeFieldInit'
-
-    if ($ExplicitLayout)
-    {
-        $StructAttributes = $StructAttributes -bor [Reflection.TypeAttributes]::ExplicitLayout
-    }
-    else
-    {
-        $StructAttributes = $StructAttributes -bor [Reflection.TypeAttributes]::SequentialLayout
-    }
-
-    $StructBuilder = $Module.DefineType($FullName, $StructAttributes, [ValueType], $PackingSize)
-    $ConstructorInfo = [Runtime.InteropServices.MarshalAsAttribute].GetConstructors()[0]
-    $SizeConst = @([Runtime.InteropServices.MarshalAsAttribute].GetField('SizeConst'))
-
-    $Fields = New-Object Hashtable[]($StructFields.Count)
-
-    # Sort each field according to the orders specified
-    # Unfortunately, PSv2 doesn't have the luxury of the
-    # hashtable [Ordered] accelerator.
-    ForEach ($Field in $StructFields.Keys)
-    {
-        $Index = $StructFields[$Field]['Position']
-        $Fields[$Index] = @{FieldName = $Field; Properties = $StructFields[$Field]}
-    }
-
-    ForEach ($Field in $Fields)
-    {
-        $FieldName = $Field['FieldName']
-        $FieldProp = $Field['Properties']
-
-        $Offset = $FieldProp['Offset']
-        $Type = $FieldProp['Type']
-        $MarshalAs = $FieldProp['MarshalAs']
-
-        $NewField = $StructBuilder.DefineField($FieldName, $Type, 'Public')
-
-        if ($MarshalAs)
-        {
-            $UnmanagedType = $MarshalAs[0] -as ([Runtime.InteropServices.UnmanagedType])
-            if ($MarshalAs[1])
-            {
-                $Size = $MarshalAs[1]
-                $AttribBuilder = New-Object Reflection.Emit.CustomAttributeBuilder($ConstructorInfo,
-                    $UnmanagedType, $SizeConst, @($Size))
-            }
-            else
-            {
-                $AttribBuilder = New-Object Reflection.Emit.CustomAttributeBuilder($ConstructorInfo, [Object[]] @($UnmanagedType))
-            }
-
-            $NewField.SetCustomAttribute($AttribBuilder)
-        }
-
-        if ($ExplicitLayout) { $NewField.SetOffset($Offset) }
-    }
-
-    # Make the struct aware of its own size.
-    # No more having to call [Runtime.InteropServices.Marshal]::SizeOf!
-    $SizeMethod = $StructBuilder.DefineMethod('GetSize',
-        'Public, Static',
-        [Int],
-        [Type[]] @())
-    $ILGenerator = $SizeMethod.GetILGenerator()
-    # Thanks for the help, Jason Shirk!
-    $ILGenerator.Emit([Reflection.Emit.OpCodes]::Ldtoken, $StructBuilder)
-    $ILGenerator.Emit([Reflection.Emit.OpCodes]::Call,
-        [Type].GetMethod('GetTypeFromHandle'))
-    $ILGenerator.Emit([Reflection.Emit.OpCodes]::Call,
-        [Runtime.InteropServices.Marshal].GetMethod('SizeOf', [Type[]] @([Type])))
-    $ILGenerator.Emit([Reflection.Emit.OpCodes]::Ret)
-
-    # Allow for explicit casting from an IntPtr
-    # No more having to call [Runtime.InteropServices.Marshal]::PtrToStructure!
-    $ImplicitConverter = $StructBuilder.DefineMethod('op_Implicit',
-        'PrivateScope, Public, Static, HideBySig, SpecialName',
-        $StructBuilder,
-        [Type[]] @([IntPtr]))
-    $ILGenerator2 = $ImplicitConverter.GetILGenerator()
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Nop)
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Ldarg_0)
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Ldtoken, $StructBuilder)
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Call,
-        [Type].GetMethod('GetTypeFromHandle'))
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Call,
-        [Runtime.InteropServices.Marshal].GetMethod('PtrToStructure', [Type[]] @([IntPtr], [Type])))
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Unbox_Any, $StructBuilder)
-    $ILGenerator2.Emit([Reflection.Emit.OpCodes]::Ret)
-
-    $StructBuilder.CreateType()
-}
-
-
-function Test-EmailAddressFormat {
-    [CmdletBinding()]
-    param(
-        [parameter(Position=0, HelpMessage='String to validate email address format.')]
-        [string]$emailaddress
-    )
-    $emailregex = "[a-z0-9!#\$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#\$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
-    if ($emailaddress -imatch $emailregex ) {
-        return $true
-    }
-    else {
-        return $false
-    }
-}
-
-
-function Test-UserSIDFormat {
-    [CmdletBinding()]
-    param(
-        [parameter(Position=0, Mandatory=$True, HelpMessage='String to validate is in user SID format.')]
-        [string]$SID
-    )
-    $sidregex = "^S-\d-\d+-(\d+-){1,14}\d+$"
-    if ($SID -imatch $sidregex ) {
-        return $true
-    }
-    else {
-        return $false
-    }
-}
-
-
-Function Validate-EmailAddress {
-    param( 
-        [Parameter(Mandatory=$true)]
-        [string]$EmailAddress
-    )
-    try {
-        $check = New-Object System.Net.Mail.MailAddress($EmailAddress)
-        return $true
-    }
-    catch {
-        return $false
-    }
 }
 
 
@@ -2787,7 +2372,9 @@ function Convert-DSUACProperty {
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
         [string]$UACProperty
     )
-    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    if ($Script:ThisModuleLoaded) {
+        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    }
     $FunctionName = $MyInvocation.MyCommand.Name
     Write-Verbose "$($FunctionName): Begin."
     try {
@@ -2981,7 +2568,7 @@ function Format-DSSearchFilterValue {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,ValueFromPipeline=$True)]
+        [Parameter( Mandatory = $true, ValueFromPipeline = $True )]
         [ValidateNotNullOrEmpty()]
         [string]$SearchString
     )
@@ -2992,7 +2579,10 @@ function Format-DSSearchFilterValue {
     $SearchString = $SearchString.Replace('(', '\28')
     $SearchString = $SearchString.Replace(')', '\29')
     $SearchString = $SearchString.Replace('/', '\2f')
-    $SearchString.Replace("`0", '\00')
+    $SearchString = $SearchString.Replace("`0", '\00')
+    Write-Verbose "$($FunctionName): formatted search string = $SearchString"
+
+    $SearchString
 }
 
 
@@ -3136,77 +2726,13 @@ function Get-DSComputer {
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSComputer.md
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Computer','Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [switch]$Raw,
+        [Parameter(HelpMessage='AdminCount is greater than 0')]
+        [switch]$AdminCount,
 
         [Parameter(HelpMessage='Only those trusted for delegation.')]
         [switch]$TrustedForDelegation,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or after this date.')]
-        [datetime]$ModifiedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or before this date.')]
-        [datetime]$ModifiedBefore,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedBefore,
 
         [Parameter(HelpMessage='Date to search for computers that logged on or after this date.')]
         [datetime]$LogOnAfter,
@@ -3215,134 +2741,100 @@ function Get-DSComputer {
         [datetime]$LogOnBefore,
 
         [Parameter(HelpMessage='Filter by the specified operating systems.')]
-        [SupportsWildcards()]
         [string[]]$OperatingSystem,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Computer is disabled')]
         [switch]$Disabled,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Computer is enabled')]
         [switch]$Enabled,
 
         [Parameter(HelpMessage='Filter by the specified Service Principal Names.')]
-        [SupportsWildcards()]
         [string[]]$SPN
     )
 
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        # Build filter
-        $BaseFilter = 'objectCategory=Computer'
-        $LDAPFilters = @()
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=Computer')
 
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
+        # Filter for accounts who have an adcmicount filed higher than 0.
+        if ($AdminCount) {
+            $BaseFilters += "admincount>=1"
         }
 
         # Filter for logon time
         if ($LogOnAfter) {
-            $LDAPFilters += "lastlogontimestamp>=$($LogOnAfter.TofileTime())"
-            #$LDAPFilters +=  "lastlogon>=$($LogOnAfter.ToString('yyyyMMddhhmmss.sZ'))"
+            $BaseFilters += "lastlogontimestamp>=$($LogOnAfter.TofileTime())"
         }
         if ($LogOnBefore) {
-            $LDAPFilters += "lastlogontimestamp<=$($LogOnBefore.TofileTime())"
-            #$LDAPFilters += "lastlogon<=$($LogOnBefore.ToString('yyyyMMddhhmmss.sZ'))"
+            $BaseFilters += "lastlogontimestamp<=$($LogOnBefore.TofileTime())"
         }
 
         # Filter by Operating System
         if ($OperatingSystem.Count -ge 1) {
-            $OSFilter = "|(operatingSystem={0})" -f ($OperatingSystem -join ')(operatingSystem=')
-            $LDAPFilters += $OSFilter
+            $BaseFilters += "|(operatingSystem={0})" -f ($OperatingSystem -join ')(operatingSystem=')
         }
 
         # Filter for accounts that are disabled.
         if ($Disabled) {
-            $LDAPFilters += "userAccountControl:1.2.840.113556.1.4.803:=2"
+            $BaseFilters += "userAccountControl:1.2.840.113556.1.4.803:=2"
         }
 
         # Filter for accounts that are enabled.
         if ($Enabled) {
-            $LDAPFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=2)"
+            $BaseFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=2)"
         }
 
         # Filter by Service Principal Name
         if ($SPN.Count -ge 1) {
-           $SPNFilter = "|(servicePrincipalName={0})" -f ($SPN -join ')(servicePrincipalName=')
-           $LDAPFilters += $SPNFilter
+            $BaseFilters += "|(servicePrincipalName={0})" -f ($SPN -join ')(servicePrincipalName=')
         }
 
         # Filter for hosts trusted for delegation.
         if ($TrustedForDelegation) {
-            $LDAPFilters += "userAccountControl:1.2.840.113556.1.4.803:=524288"
+            $BaseFilters += "userAccountControl:1.2.840.113556.1.4.803:=524288"
         }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        # Process the last filters here to keep them separated in case they are being passed via the pipeline
-        $FinalLDAPFilters = $LDAPFilters
-        if ($Identity) {
-            $FinalLDAPFilters += "name=$($Identity)"
-        }
-        else {
-            $FinalLDAPFilters += "name=*"
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        $FinalLDAPFilters = @($FinalLDAPFilters | Select-Object -Unique)
-        if ($ChangeLogicOrder) {
-            # Join filters with logical OR
-            $FinalFilter = "(&($BaseFilter)(|({0})))" -f ($FinalLDAPFilters -join ')(')
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
-        else {
-            # Join filters with logical AND
-            $FinalFilter = "(&($BaseFilter)(&({0})))" -f ($FinalLDAPFilters -join ')(')
-        }
-        Write-Verbose "$($FunctionName): Searching with filter: $FinalFilter"
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $FinalFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams
         }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
-        }
-        if ($Raw) {
-            $SearcherParams.Raw = $true
-        }
-        Get-DSObject @SearcherParams
     }
 }
 
@@ -3501,6 +2993,139 @@ function Get-DSCurrentConnectionStatus {
    }
 }
 
+
+
+function Get-DSDFS {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSDFS.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter(Position = 1)]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential
+    )
+
+    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+
+    $DSParams = @{
+        ComputerName = $ComputerName
+        Credential = $Credential
+    }
+    $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+    $DomNamingContext = $RootDSE.RootDomainNamingContext
+    $DFSDN = "CN=Dfs-Configuration,CN=System,$DomNamingContext"
+
+    if ((Test-DSObjectPath -Path $DFSDN @DSParams)) {
+        # process fTDfs first
+        $DFSData = @(Get-DSObject -SearchRoot $DFSDN @DSParams -Filter 'objectClass=fTDfs' -Properties Name,distinguishedName,remoteServerName)
+        Foreach ($DFSItem in $DFSData) {
+            $DomDFSProps = @{
+                objectClass = 'fTDfs'
+                distinguishedName = $DFSItem.distinguishedName
+                name = $DFSItem.Name
+                remoteServerName = $DFSItem.remoteServerName -replace ('\*',"")
+            }
+
+            New-Object -TypeName psobject -Property $DomDFSProps
+        }
+
+        # process msDFS-NamespaceAnchor next
+        $DFSData = @(Get-DSObject -SearchRoot $DFSDN @DSParams -Filter 'objectClass=msDFS-NamespaceAnchor' -Properties  Name,distinguishedName,'msDFS-SchemaMajorVersion',whenCreated)
+
+        Foreach ($DFSItem in $DFSData) {
+            $DomDFSProps = @{
+                name = $DFSItem.Name
+                objectClass = 'msDFS-NamespaceAnchor'
+                'msDFS-SchemaMajorVersion' = $DFSItem.'msDFS-SchemaMajorVersion'
+                whenCreated = $DFSItem.whenCreated
+            }
+            $DFSItemMembers = @(Get-DSObject -SearchRoot $DFSItem.distinguishedName @DSParams -Filter 'objectClass=msDFS-Namespacev2' -IncludeAllProperties)
+
+            $DFSItemMembers | ForEach-Object {
+                $ItemMemberLinks = @(Get-DSObject -SearchRoot $_.distinguishedName @DSParams -Filter 'objectClass=msDFS-Linkv2' -IncludeAllProperties)
+                $_ | Add-Member -MemberType:NoteProperty -Name 'DFSItemLinks' -Value $ItemMemberLinks
+            }
+
+            $DomDFSProps.ItemMembers = $DFSItemMembers
+
+            New-Object -TypeName psobject -Property $DomDFSProps
+        }
+    }
+}
+
+
+
+function Get-DSDFSR {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSDFSR.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter(Position = 1)]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential
+    )
+
+    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+
+    $DSParams = @{
+        ComputerName = $ComputerName
+        Credential = $Credential
+    }
+    $DFSGroupTopologyProps = @( 'Name', 'distinguishedName', 'msDFSR-ComputerReference')
+
+    $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+    $DomNamingContext = $RootDSE.RootDomainNamingContext
+    $DFSRDN = "CN=DFSR-GlobalSettings,CN=System,$DomNamingContext"
+
+    if ((Test-DSObjectPath -Path $DFSRDN @DSParams)) {
+        $DFSRGroups = @(Get-DSObject -SearchRoot $DFSRDN @DSParams -Filter 'objectClass=msDFSR-ReplicationGroup' -Properties 'Name','distinguishedName')
+        Foreach ($DFSRGroup in $DFSRGroups) {
+            $DFSRGC = @()
+            $DFSRGTop = @()
+            $DFSRGroupContentDN = "CN=Content,$($DFSRGroup.distinguishedName)"
+            $DFSRGroupTopologyDN = "CN=Topology,$($DFSRGroup.distinguishedName)"
+
+            $DFSRGroupContent = @(Get-DSObject -SearchRoot $DFSRGroupContentDN @DSParams -Filter 'objectClass=msDFSR-ContentSet' -Properties 'Name')
+            $DFSRGC = @($DFSRGroupContent | ForEach-Object {$_.Name})
+
+            $DFSRGroupTopology = @(Get-DSObject -SearchRoot $DFSRGroupTopologyDN @DSParams -Filter 'objectClass=msDFSR-Member' -Properties $DFSGroupTopologyProps)
+
+            foreach ($DFSRGroupTopologyItem in $DFSRGroupTopology) {
+                $DFSRServerName = Get-ADPathName $DFSRGroupTopologyItem.'msDFSR-ComputerReference' -GetElement 0 -ValuesOnly
+                $DFSRGTop += [string]$DFSRServerName
+            }
+            $DomDFSRProps = @{
+                Name = $DFSRGroup.Name
+                Content = $DFSRGC
+                RemoteServerName = $DFSRGTop
+            }
+
+            New-Object -TypeName psobject -Property $DomDFSRProps
+        }
+    }
+}
 
 
 function Get-DSDirectoryContext {
@@ -3675,11 +3300,9 @@ function Get-DSDirectoryEntry {
             'CurrentUser' {
                 Write-Verbose "$($FunctionName): Current user."
                 if ([string]::IsNullOrEmpty($DistinguishedName)) {
-                    #[adsi]''
                     New-Object -TypeName System.DirectoryServices.DirectoryEntry
                 }
                 else {
-                    #[adsi]"$($PathType.ToUpper())://$($DistinguishedName)"
                     $fullPath = "$($PathType.ToUpper())://$($DistinguishedName)"
                     New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList @($fullPath)
                 }
@@ -3700,6 +3323,7 @@ function Get-DSDirectorySearcher {
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSDirectorySearcher.md
     #>
     [CmdletBinding()]
+    [OutputType([System.DirectoryServices.DirectorySearcher])]
     param(
         [Parameter()]
         [Alias('Server','ServerName')]
@@ -3719,7 +3343,7 @@ function Get-DSDirectorySearcher {
         [string]$SearchRoot,
 
         [Parameter()]
-        [string[]]$Filter = 'name=*',
+        [string]$Filter = 'distinguishedName=*',
 
         [Parameter()]
         [string[]]$Properties = @('Name','ADSPath'),
@@ -3746,7 +3370,15 @@ function Get-DSDirectorySearcher {
         Write-Verbose "$($FunctionName): Begin."
 
         $ADConnectState = Get-CredentialState -Credential $Credential -ComputerName $ComputerName
-        $SplitCreds = Split-Credential -Credential $Credential
+
+        # Get the list of parameters for the command
+        $PassedParams = @{}
+        foreach($p in @((Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters).Values ) {
+            if ($Script:CommonParameters -notcontains $p.Name) {
+                $PassedParams.($p.Name) = (Get-Variable -Name $p.Name -ErrorAction SilentlyContinue).Value
+            }
+        }
+        $Script:LastSearchSetting = new-object psobject -Property $PassedParams
     }
 
     process {
@@ -3775,13 +3407,7 @@ function Get-DSDirectorySearcher {
             }
         }
 
-        if (-not [string]::IsNullOrEmpty($Filter)) {
-            Write-Verbose "$($FunctionName): Joining ldap filters, total filters = $($Filter.Count)."
-            $LDAP = "(&({0}))" -f ($Filter -join ')(')
-            Write-Verbose "$($FunctionName): LDAP filter = $LDAP"
-        }
-
-        $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList @($domObj, $LDAP, $Properties) -Property @{
+        $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList @($domObj, $Filter, $Properties) -Property @{
             PageSize = $PageSize
             SearchScope = $SearchScope
             Tombstone = $TombStone
@@ -3809,22 +3435,20 @@ function Get-DSDomain {
     [CmdletBinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
         [Alias('Name','Domain','DomainName')]
         [string]$Identity = ($Script:CurrentDomain).name,
 
-        [Parameter()]
+        [Parameter( Position=1 )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter( Position=2 )]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
 
-        [Parameter()]
+        [Parameter( Position=3 )]
         [switch]$UpdateCurrent
     )
 
@@ -4111,17 +3735,15 @@ function Get-DSForest {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
+        [Parameter( Position=0, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True )]
         [Alias('Name','Forest','ForestName')]
         [string]$Identity = ($Script:CurrentForest).name,
 
-        [Parameter()]
+        [Parameter( Position=1 )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter( Position=2 )]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
@@ -4170,17 +3792,15 @@ function Get-DSForestTrust {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
+        [Parameter(Position=0, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
         [Alias('Name','Forest','ForestName')]
         [string]$Identity = ($Script:CurrentForest).name,
 
-        [Parameter()]
+        [Parameter(Position=1)]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter(Position=2)]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
@@ -4202,81 +3822,68 @@ function Get-DSForestTrust {
 
 
 
+function Get-DSFRS {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSFRS.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter(Position = 1)]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential
+    )
+
+    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+
+    $DSParams = @{
+        ComputerName = $ComputerName
+        Credential = $Credential
+    }
+    $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+    $DomNamingContext = $RootDSE.RootDomainNamingContext
+    $FRSDN = "CN=File Replication Service,CN=System,$DomNamingContext"
+
+    $FRSReplicaSetProps = @( 'name', 'distinguishedName', 'fRSReplicaSetType', 'fRSFileFilter', 'whenCreated')
+    $FRSReplicaSetItemProps = @( 'name', 'distinguishedName', 'frsComputerReference', 'whenCreated')
+
+    if ((Test-DSObjectPath -Path $FRSDN @DSParams)) {
+
+        $FRSReplicaSets = @(Get-DSObject -SearchRoot $FRSDN @DSParams -Filter 'objectClass=nTFRSReplicaSet' -Properties $FRSReplicaSetProps)
+
+        Foreach ($FRSReplicaSet in $FRSReplicaSets) {
+            $FRSProps = @{
+               FRSReplicaSetName = $FRSReplicaSet.name
+               FRSReplicaSetType = $FRSReplicaSet.fRSReplicaSetType
+               FRSFileFilter = $FRSReplicaSet.fRSFileFilter
+               FRSReplicaWhenCreated = $FRSReplicaSet.whenCreated
+            }
+
+            $FRSProps.ReplicaSetItems = @(Get-DSObject -SearchRoot $FRSReplicaSet.distinguishedName @DSParams -Filter 'objectClass=nTFRSMember' -Properties $FRSReplicaSetItemProps)
+
+            New-Object -TypeName psobject -Property $FRSProps
+        }
+    }
+}
+
+
 function Get-DSGPO {
     <#
     .EXTERNALHELP PSAD-help.xml
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSGPO.md
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or after this date.')]
-        [datetime]$ModifiedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or before this date.')]
-        [datetime]$ModifiedBefore,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedBefore,
-
         [Parameter()]
         [string[]]$UserExtension,
 
@@ -4284,36 +3891,21 @@ function Get-DSGPO {
         [string[]]$MachineExtension
     )
 
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        # Base filter is the part of this filter that must always be met.
-        $BaseFilter = 'objectClass=groupPolicyContainer'
-        $LDAPFilters = @()
-
-        # Passed filters are joined with AND logic
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=groupPolicyContainer')
 
         # Filter on User Extension Filter.
         if ($UserExtension) {
@@ -4324,59 +3916,37 @@ function Get-DSGPO {
         if ($MachineExtension) {
             $LDAPFilters += "|(gpcmachineextensionnames=*{0})" -f ($UserExtension -join '*)(gpcmachineextensionnames=*')
         }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        # Process the last filters here to keep them separated in case they are being passed via the pipeline
-        $FinalLDAPFilters = $LDAPFilters
-        if ($Identity) {
-            $FinalLDAPFilters += "|(name=$($Identity))(displayname=$($Identity))"
-        }
-        else {
-            $FinalLDAPFilters += "name=*"
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        $FinalLDAPFilters = $FinalLDAPFilters | Select -Unique
-        if ($ChangeLogicOrder) {
-            # Join filters with logical OR
-            $FinalFilter = "(&($BaseFilter)(|({0})))" -f ($FinalLDAPFilters -join ')(')
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
-        else {
-            # Join filters with logical AND
-            $FinalFilter = "(&($BaseFilter)(&({0})))" -f ($FinalLDAPFilters -join ')(')
-        }
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        Write-Verbose "$($FunctionName): Searching with filter: $FinalFilter"
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
 
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $FinalFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
+            Get-DSObject @GetObjectParams
         }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
-        }
-        if ($Raw) {
-            $SearcherParams.Raw = $true
-        }
-
-        Get-DSObject @SearcherParams
     }
 }
-
 
 
 function Get-DSGroup {
@@ -4385,183 +3955,85 @@ function Get-DSGroup {
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSGroup.md
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Group','Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [datetime]$ModifiedAfter,
-
-        [Parameter()]
-        [datetime]$ModifiedBefore,
-
-        [Parameter()]
-        [datetime]$CreatedAfter,
-
-        [Parameter()]
-        [datetime]$CreatedBefore,
-
         [Parameter()]
         [ValidateSet('Security','Distribution')]
         [string]$Category,
 
         [Parameter()]
-        [switch]$AdminCount
+        [switch]$AdminCount,
+
+        [Parameter()]
+        [switch]$Empty
+
     )
+
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
 
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        # Build filter
-        $CompLDAPFilter = 'objectCategory=Group'
-        $LDAPFilters = @()
-
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter -and $ModifiedBefore) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ')))(whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter -and $CreatedBefore) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ')))(whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        if ($Identity) {
-            $Identity = Format-ADSearchFilterValue -String $Identity
-            $LDAPFilters += "|(name=$($Identity))(sAMAccountName=$($Identity))(cn=$($Identity))"
-        }
-        else {
-            $LDAPFilters += 'name=*'
-        }
-       # Filter for accounts who have an adcmicount filed higher than 0.
-        if ($AdminCount) {
-            $LDAPFilters += "admincount>=1"
-        }
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=Group')
 
         # Filter by category
         if ($Category) {
             switch ($category) {
                 'Distribution' {
-                    $LDAPFilters += '!(groupType:1.2.840.113556.1.4.803:=2147483648)'
+                    $BaseFilters += '!(groupType:1.2.840.113556.1.4.803:=2147483648)'
                 }
                 'Security' {
-                    $LDAPFilters += 'groupType:1.2.840.113556.1.4.803:=2147483648'
+                    $BaseFilters += 'groupType:1.2.840.113556.1.4.803:=2147483648'
                 }
             }
         }
 
-        $LDAPFilters = $LDAPFilters | Select -Unique
+        # Filter for accounts who have an adcmicount filed higher than 0.
+        if ($AdminCount) {
+            $BaseFilters += "admincount>=1"
+        }
 
-        if ($ChangeLogicOrder) {
-            $GroupFilter = "(&($CompLDAPFilter)(|({0})))" -f ($LDAPFilters -join ')(')
+        if ($Empty) {
+            $BaseFilters += "!(member=*)"
         }
-        else {
-            $GroupFilter = "(&($CompLDAPFilter)(&({0})))" -f ($LDAPFilters -join ')(')
-        }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        Write-Verbose "$($FunctionName): Searching with filter: $GroupFilter"
-
-         $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $GroupFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
-        }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        if ($Raw) {
-            $SearcherParams.Raw = $true
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        Get-DSObject @SearcherParams
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams
+        }
     }
 }
 
@@ -4573,122 +4045,69 @@ function Get-DSGroupMember {
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSGroupMember.md
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0, Mandatory=$True, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [Alias('Name','Group','GroupName')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$Raw,
-
         [Parameter()]
         [switch]$Recurse
     )
 
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        $BaseSearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
-        }
-
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $BaseSearcherParams.Tombstone = $true
-        }
+        $Identities = @()
     }
 
     process {
-        Write-Verbose "$($FunctionName): Trying to find the group - $Identity"
-        try {
-            $Identity = Format-DSSearchFilterValue -String $Identity
-            $Group = Get-DSGroup @BaseSearcherParams -Identity $Identity -Properties @('distinguishedname','samaccountname')
-        }
-        catch {
-            throw
-            Write-Error "$($FunctionName): Error trying to find the group - $Identity"
+
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        if ($Group.distinguishedname -eq $null) {
-            Write-Error "$($FunctionName): No group found with the name of $Identity"
-            return
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
+        $GetMemberParams = $GetObjectParams.Clone()
+        $GetMemberParams.Identity = $null
 
-        $GroupSearcherParams = $BaseSearcherParams.Clone()
+        $Identities += $Identity
+    }
 
-        if ($Properties.count -ge 1) {
-            $GroupSearcherParams.Properties = $Properties
-        }
-        if ($IncludeAllProperties) {
-            $GroupSearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $GroupSearcherParams.DontJoinAttributeValues = $true
-        }
-        if ($Raw) {
-            $GroupSearcherParams.Raw = $true
-        }
+    end {
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for group: $ID"
+            $GetObjectParams.Identity = $ID
+            $OriginalProperties = $GetObjectParams.Properties
+            $GetObjectParams.Properties = 'distinguishedname'
 
-        $Filter = @()
-        if ($Recurse) {
-            $Filter += "memberof:1.2.840.113556.1.4.1941:=$($Group.distinguishedname)"
-        }
-        else {
-            $Filter += "memberof=$($Group.distinguishedname)"
-        }
+            try {
+                $GroupDN = (Get-DSGroup @GetObjectParams).distinguishedname
+                if ($Recurse) {
+                    $GetMemberParams.BaseFilter += "memberof:1.2.840.113556.1.4.1941:=$GroupDN"
+                }
+                else {
+                    $GetMemberParams.BaseFilter += "memberof=$GroupDN"
+                }
 
-        Get-DSObject @GroupSearcherParams -Filter $Filter
+                Get-DSObject @GetMemberParams
+            }
+            catch {
+                Write-Warning "$($FunctionName): Unable to find group with ID of $ID"
+            }
+        }
     }
 }
 
@@ -4783,65 +4202,83 @@ function Get-DSObject {
     #>
 
     [CmdletBinding()]
+    [OutputType([object],[System.DirectoryServices.DirectoryEntry],[System.DirectoryServices.DirectorySearcher])]
     param(
-        [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [SupportsWildcards()]
-        [Alias('Name')]
+        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive. Accepts distinguishedname, GUID, and samAccountName.')]
+        [Alias('User', 'Name', 'sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
-        [Parameter()]
+        [Parameter( position = 1, HelpMessage='Domain controller to use for this search.' )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Credentials to connect with.' )]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Limit results. If zero there is no limit.')]
         [Alias('SizeLimit')]
         [int]$Limit = 0,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Root path to search.')]
         [string]$SearchRoot,
 
-        [Parameter()]
+        [Parameter(HelpMessage='LDAP filters to use.')]
         [string[]]$Filter,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Immutable base ldap filter to use.')]
+        [string]$BaseFilter,
+
+        [Parameter(HelpMessage='LDAP properties to return')]
         [string[]]$Properties = @('Name','ADSPath'),
 
-        [Parameter()]
+        [Parameter(HelpMessage='Page size for larger results.')]
         [int]$PageSize = $Script:PageSize,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Type of search.')]
         [ValidateSet('Subtree', 'OneLevel', 'Base')]
         [string]$SearchScope = 'Subtree',
 
-        [Parameter()]
+        [Parameter(HelpMessage='Security mask for search.')]
         [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
         [string]$SecurityMask = 'None',
 
-        [Parameter()]
+        [Parameter(HelpMessage='Include tombstone objects.')]
         [switch]$TombStone,
 
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ExpandUAC,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter()]
+        [Parameter(HelpMessage='Use logical OR instead of AND for custom LDAP filters.')]
         [switch]$ChangeLogicOrder,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Only include objects modified after this date.')]
+        [datetime]$ModifiedAfter,
+
+        [Parameter(HelpMessage='Only include objects modified before this date.')]
+        [datetime]$ModifiedBefore,
+
+        [Parameter(HelpMessage='Only include objects created after this date.')]
+        [datetime]$CreatedAfter,
+
+        [Parameter(HelpMessage='Only include objects created before this date.')]
+        [datetime]$CreatedBefore,
+
+        [Parameter(HelpMessage='Do not joine attribute values in output.')]
+        [switch]$DontJoinAttributeValues,
+
+        [Parameter(HelpMessage='Include all properties that have a value')]
+        [switch]$IncludeAllProperties,
+
+        [Parameter(HelpMessage='Include null property values')]
+        [switch]$IncludeNullProperties,
+
+        [Parameter(HelpMessage='Expand useraccountcontroll property (if it exists).')]
+        [switch]$ExpandUAC,
+
+        [Parameter(HelpMessage='Do no property transformations in output.')]
+        [switch]$Raw,
+
+        [Parameter(HelpMessage='How you want the results to be returned.')]
         [ValidateSet('psobject', 'directoryentry', 'searcher')]
         [string]$ResultsAs = 'psobject'
     )
@@ -4852,56 +4289,37 @@ function Get-DSObject {
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Credential = $Credential
-            Properties = $Properties
-            SecurityMask = $SecurityMask
-        }
     }
     Process {
-        # Build the filter
-        $LDAPFilters = Get-CommonIDLDAPFilter -Identity $Identity -Filter $Filter
-        if (-not [string]::IsNullOrEmpty($Identity)) {
-            # If an identity was passed then change to or logic
-            $ChangeLogicOrder = $true
+        $SearcherParams = Get-CommonSearcherParams `
+            -Identity $Identity `
+            -ComputerName $ComputerName `
+            -Credential $Credential `
+            -Limit $Limit `
+            -SearchRoot $SearchRoot `
+            -Filter $Filter `
+            -BaseFilter $BaseFilter `
+            -Properties $Properties `
+            -PageSize $PageSize `
+            -SearchScope $SearchScope `
+            -SecurityMask $SecurityMask `
+            -TombStone $TombStone `
+            -ChangeLogicOrder $ChangeLogicOrder `
+            -ModifiedAfter $ModifiedAfter `
+            -ModifiedBefore $ModifiedBefore `
+            -CreatedAfter $CreatedAfter `
+            -CreatedBefore $CreatedBefore `
+            -IncludeAllProperties $IncludeAllProperties `
+            -IncludeNullProperties $IncludeNullProperties
+
+        # Store for later reference
+        try {
+            $objSearcher = Get-DSDirectorySearcher @SearcherParams
+        }
+        catch {
+            throw $_
         }
 
-        if ($ChangeLogicOrder) {
-            Write-Verbose "$($FunctionName): Combining filters with OR logic."
-            $SearcherParams.Filter = "(&(|({0})))" -f ($LDAPFilters -join ')(')
-        }
-        else {
-            Write-Verbose "$($FunctionName): Combining filters with AND logic."
-            $SearcherParams.Filter = "(&(&({0})))" -f ($LDAPFilters -join ')(')
-        }
-
-        if ($IncludeAllProperties) {
-            Write-Verbose "$($FunctionName): Including all properties. Any passed properties will be ignored."
-            $SearcherParams.Properties = '*'
-        }
-
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-
-        # If a limit is set then use it to limit our results, otherwise use the page size (which doesn't limit results)
-        if ($Limit -ne 0) {
-            $SearcherParams.Limit = $Limit
-        }
-        else {
-            $SearcherParams.PageSize = $PageSize
-        }
-
-        # Store the search settings for later inspection if required
-        $Script:LastSearchSetting = $SearcherParams
-
-        Write-Verbose "$($FunctionName): Searching with filter: $LDAPFilter"
-
-        $objSearcher = Get-DSDirectorySearcher @SearcherParams
         switch ($ResultsAs) {
             'directoryentry' {
                 $objSearcher.findall() | Foreach {
@@ -4954,7 +4372,7 @@ function Get-DSObject {
                                             $Val = '<Never>'
                                         }
                                     }
-                                { @('pwdlastset', 'lastlogon', 'badpasswordtime') -contains $_ } {
+                                    { @('pwdlastset', 'lastlogon', 'badpasswordtime') -contains $_ } {
                                         Write-Verbose "$($FunctionName): Reformatting $Prop"
                                         $Val = [dateTime]::FromFileTime($Val[0])
                                     }
@@ -5040,7 +4458,8 @@ function Get-DSObject {
 
                     # Only return results that have more than 0 properties
                     if ($ObjectProps.psbase.keys.count -ge 1) {
-                        if ($IncludeAllProperties) {
+                        # if we include all or even null properties then we poll the schema for our object's possible properties
+                        if ($IncludeAllProperties -or $IncludeNullProperties) {
                             if (-not ($Script:__ad_schema_info.ContainsKey($ObjClass))) {
                                 Write-Verbose "$($FunctionName): Storing schema attributes for $ObjClass for the first time"
                                 Write-Verbose "$($FunctionName): Object class being queried for in the schema = $objClass"
@@ -5050,14 +4469,38 @@ function Get-DSObject {
                                 Write-Verbose "$($FunctionName): $ObjClass schema properties already loaded"
                             }
 
-                            ($Script:__ad_schema_info).$ObjClass | Foreach {
-                                if (-not ($ObjectProps.ContainsKey($_))) {
-                                    $ObjectProps.$_ = $null
+                            if ($IncludeAllProperties -and $IncludeNullProperties) {
+                                ($Script:__ad_schema_info).$ObjClass | Foreach {
+                                    if (-not ($ObjectProps.ContainsKey($_))) {
+                                        # If the property exists in the schema but not in the searcher results
+                                        # then it gets assigned a null value.
+                                        $ObjectProps.$_ = $null
+                                    }
+                                }
+                            }
+                            elseif ($IncludeNullProperties) {
+                                ($Script:__ad_schema_info).$ObjClass | Where {$Properties -contains $_}| Foreach {
+                                    if (-not ($ObjectProps.ContainsKey($_))) {
+                                        # If the property exists in the schema and our passed properties but not in
+                                        # the searcher results then it gets assigned a null value.
+                                        # This eliminates properties that may get passed by a user but that
+                                        # don't exist on object.
+                                        $ObjectProps.$_ = $null
+                                    }
                                 }
                             }
                         }
-
-                        New-Object PSObject -Property $ObjectProps | Select-Object $Properties
+                        if (-not $IncludeAllProperties) {
+                            # We only want to return properties that actually exist on the object
+                            $Properties2 = $Properties | Where {$ObjectProps.ContainsKey($_)}
+                        }
+                        else {
+                            # Or all the properties
+                            $Properties2 = '*'
+                        }
+                        if ($null -ne $Properties2) {
+                            New-Object PSObject -Property $ObjectProps | Select-Object $Properties2
+                        }
                     }
                 }
             }
@@ -5102,7 +4545,7 @@ function Get-DSOCSSchemaVersion {
         $DomNamingContext = $RootDSE.RootDomainNamingContext
         $ConfigContext = $RootDSE.configurationNamingContext
     }
-    
+
     end {
         # First get the schema version
         if ((Test-DSObjectPath -Path "CN=ms-RTC-SIP-SchemaVersion,$((Get-DSSchema).Name)" @DSParams)) {
@@ -5311,11 +4754,11 @@ function Get-DSPageSize {
 
 
 
-function Get-DSSCCMServer {
+function Get-DSSCCMManagementPoint {
     <#
     .EXTERNALHELP PSAD-help.xml
     .LINK
-        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSSCCMServer.md
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSSCCMManagementPoint.md
     #>
     [CmdletBinding()]
     param(
@@ -5346,7 +4789,7 @@ function Get-DSSCCMServer {
     end {
         if ((Test-DSObjectPath -Path $SysManageContext @DSParams)) {
 
-            $SCCMData = @(Get-DSObject -SearchRoot $SysManageContext @DSParams -Filter 'objectClass=mSSMSManagementPoint' -Properties mSSMSCapabilities,mSSMSMPName,dNSHostName,mSSMSSiteCode,mSSMSVersion,mSSMSDefaultMP,mSSMSDeviceManagementPoint)
+            $SCCMData = @(Get-DSObject -SearchRoot $SysManageContext @DSParams -Filter 'objectClass=mSSMSManagementPoint' -Properties name,mSSMSCapabilities,mSSMSMPName,dNSHostName,mSSMSSiteCode,mSSMSVersion,mSSMSDefaultMP,mSSMSDeviceManagementPoint,whenCreated)
 
             Foreach ($SCCM in $SCCMData) {
                 $SCCMxml = [XML]$SCCM.mSSMSCapabilities
@@ -5360,15 +4803,59 @@ function Get-DSSCCMServer {
                     $SCCMVer = $schemaVersionSCCM
                 }
                 New-Object -TypeName psobject -Property @{
+                    name = $SCCM.name
                     Version = $SCCMVer
-                    MPName = $SCCM.mSSMSMPName
-                    FQDN = $SCCM.dNSHostName
-                    SiteCode = $SCCM.mSSMSSiteCode
-                    SMSVersion = $SCCM.mSSMSVersion
-                    DefaultMP = $SCCM.mSSMSDefaultMP
-                    DeviceMP = $SCCM.mSSMSDeviceManagementPoint
+                    mSSMSMPName = $SCCM.mSSMSMPName
+                    dNSHostName = $SCCM.dNSHostName
+                    mSSMSSiteCode = $SCCM.mSSMSSiteCode
+                    mSSMSVersion = $SCCM.mSSMSVersion
+                    mSSMSDefaultMP = $SCCM.mSSMSDefaultMP
+                    mSSMSDeviceManagementPoint = $SCCM.mSSMSDeviceManagementPoint
+                    whenCreated = $SCCM.whenCreated
                 }
             }
+        }
+    }
+}
+
+
+
+function Get-DSSCCMServiceLocatorPoint {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSSCCMServiceLocatorPoint.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter(Position = 1)]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential
+    )
+
+    begin {
+        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        $FunctionName = $MyInvocation.MyCommand.Name
+        Write-Verbose "$($FunctionName): Begin."
+        $DSParams = @{
+            ComputerName = $ComputerName
+            Credential = $Credential
+        }
+        $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+        $DomNamingContext = $RootDSE.RootDomainNamingContext
+        $SysManageContext = "CN=System Management,CN=System,$DomNamingContext"
+    }
+
+    end {
+        if ((Test-DSObjectPath -Path $SysManageContext @DSParams)) {
+
+            Get-DSObject -SearchRoot $SysManageContext @DSParams -Filter 'objectClass=mSSMSServerLocatorPoint' -Properties name,mSSMSMPName,mSSMSSiteCode,whenCreated
         }
     }
 }
@@ -5431,6 +4918,74 @@ function Get-DSSchema {
 
 
 
+function Get-DSSID {
+<#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSSID.md
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Object')]
+    param(
+        [Parameter(Position = 0, Mandatory=$True, ValueFromPipeline=$True, ParameterSetName='Object')]
+        [Alias('Group','User')]
+        [String]$Name,
+
+        [Parameter(Position = 0, Mandatory=$True, ValueFromPipeline=$True, ParameterSetName='SID')]
+        [ValidatePattern('^S-1-.*')]
+        [String]$SID,
+
+        [Parameter(Position = 1)]
+        [string]$Domain = ($Script:CurrentDomain).Name,
+
+        [Parameter(Position = 2)]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter(Position = 3)]
+        [Alias('Creds')]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.CredentialAttribute()]
+        $Credential = $Script:CurrentCredential
+    )
+
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+
+    switch ($PsCmdlet.ParameterSetName) {
+        'Object'  {
+            $ObjectName = $Name -Replace "/","\"
+
+            if($ObjectName.Contains("\")) {
+                # if we get a DOMAIN\user format, auto convert it
+                $Domain = $ObjectName.Split("\")[0]
+                $ObjectName = $ObjectName.Split("\")[1]
+            }
+            elseif(-not $Domain) {
+                Write-Verbose "$($FunctionName): No domain found in object name or passed to function, attempting to use currently connected domain name."
+                try {
+                    $Domain = (Get-DSCurrentConnectedDomain).Name
+                }
+                catch {
+                    throw "$($FunctionName): Unable to retreive or find a domain name for object!"
+                }
+            }
+
+            try {
+                $Obj = (New-Object System.Security.Principal.NTAccount($Domain, $ObjectName))
+                $Obj.Translate([System.Security.Principal.SecurityIdentifier]).Value
+            }
+            catch {
+                Write-Warning "$($FunctionName): Invalid object/name - $Domain\$ObjectName"
+            }
+        }
+        'SID' {
+            ConvertTo-SecurityIdentifier -SID $SID
+        }
+    }
+
+}
+
+
 function Get-DSTombstoneLifetime {
     <#
     .EXTERNALHELP PSAD-help.xml
@@ -5481,66 +5036,8 @@ function Get-DSUser {
     .LINK
         https://github.com/zloeber/PSAD/tree/master/release/0.0.5/docs/Functions/Get-DSUser.md
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('User','Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter()]
-        [switch]$ExpandUAC,
-
         [Parameter()]
         [switch]$DotNotAllowDelegation,
 
@@ -5549,18 +5046,6 @@ function Get-DSUser {
 
         [Parameter()]
         [switch]$UnconstrainedDelegation,
-
-        [Parameter()]
-        [datetime]$ModifiedAfter,
-
-        [Parameter()]
-        [datetime]$ModifiedBefore,
-
-        [Parameter()]
-        [datetime]$CreatedAfter,
-
-        [Parameter()]
-        [datetime]$CreatedBefore,
 
         [Parameter()]
         [datetime]$LogOnAfter,
@@ -5593,162 +5078,116 @@ function Get-DSUser {
         [switch]$Locked
     )
 
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
         # Most efficient user ldap filter for user accounts: http://www.selfadsi.org/extended-ad/search-user-accounts.htm
-        $BaseFilter = 'sAMAccountType=805306368'
-        $LDAPFilters = @()
+        $BaseFilters = @('sAMAccountType=805306368')
 
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
+        # Logon LDAP filter section
+        $LogonLDAPFilters = @()
         if ($LogOnAfter) {
-            $LDAPFilters += "lastlogontimestamp>=$($LogOnAfter.TofileTime())"
-            #$LDAPFilters +=  "lastlogon>=$($LogOnAfter.ToString('yyyyMMddhhmmss.sZ'))"
+            $LogonLDAPFilters += "lastlogontimestamp>=$($LogOnAfter.TofileTime())"
         }
         if ($LogOnBefore) {
-            $LDAPFilters += "lastlogontimestamp<=$($LogOnBefore.TofileTime())"
-            #$LDAPFilters += "lastlogon<=$($LogOnBefore.ToString('yyyyMMddhhmmss.sZ'))"
+            $LogonLDAPFilters += "lastlogontimestamp<=$($LogOnBefore.TofileTime())"
         }
+        $BaseFilters += Get-CombinedLDAPFilter -Filter $LogonLDAPFilters -Conditional '&'
 
         # Filter for accounts that are marked as sensitive and can not be delegated.
         if ($DotNotAllowDelegation) {
-            $LDAPFilters += 'userAccountControl:1.2.840.113556.1.4.803:=1048574'
+            $BaseFilters += 'userAccountControl:1.2.840.113556.1.4.803:=1048574'
         }
 
         if ($AllowDelegation) {
             # negation of "Accounts that are sensitive and not trusted for delegation"
-            $LDAPFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=1048574)"
+            $BaseFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=1048574)"
         }
 
         # User has unconstrained delegation set.
         if ($UnconstrainedDelegation) {
-            $LDAPFilters += "userAccountControl:1.2.840.113556.1.4.803:=524288"
+            $BaseFilters += "userAccountControl:1.2.840.113556.1.4.803:=524288"
         }
 
         # Account is locked
         if ($Locked) {
-            $LDAPFilters += 'lockoutTime>=1'
+            $BaseFilters += 'lockoutTime>=1'
         }
 
         # Filter for accounts who do not requiere a password to logon.
         if ($NoPasswordRequired) {
-            $LDAPFilters += 'userAccountControl:1.2.840.113556.1.4.803:=32'
+            $BaseFilters += 'userAccountControl:1.2.840.113556.1.4.803:=32'
         }
 
         # Filter for accounts whose password does not expires.
         if ($PasswordNeverExpires) {
-            $LDAPFilters += "userAccountControl:1.2.840.113556.1.4.803:=65536"
+            $BaseFilters += "userAccountControl:1.2.840.113556.1.4.803:=65536"
         }
 
         # Filter for accounts that are disabled.
         if ($Disabled) {
-            $LDAPFilters += "userAccountControl:1.2.840.113556.1.4.803:=2"
+            $BaseFilters += "userAccountControl:1.2.840.113556.1.4.803:=2"
         }
 
         # Filter for accounts that are enabled.
         if ($Enabled) {
-            $LDAPFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=2)"
+            $BaseFilters += "!(userAccountControl:1.2.840.113556.1.4.803:=2)"
         }
 
         # Filter for accounts who have an adcmicount filed higher than 0.
         if ($AdminCount) {
-            $LDAPFilters += "admincount>=1"
+            $BaseFilters += "admincount>=1"
         }
 
         # Filter for accounts that have SPN set.
         if ($ServiceAccount) {
-            $LDAPFilters += "servicePrincipalName=*"
+            $BaseFilters += "servicePrincipalName=*"
         }
 
         # Filter whose users must change their passwords.
         if ($MustChangePassword) {
-            $LDAPFilters += 'pwdLastSet=0'
+            $BaseFilters += 'pwdLastSet=0'
         }
 
-        $LDAPFilters = @($LDAPFilters | Select-Object -Unique)
-        if ($ChangeLogicOrder) {
-            $UserFilter = "(&($UserLDAPFilter)(|({0})))" -f ($LDAPFilters -join ')(')
-        }
-        else {
-            $UserFilter = "(&($UserLDAPFilter)(&({0})))" -f ($LDAPFilters -join ')(')
-        }
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        # Process the last filters here to keep them separated in case they are being passed via the pipeline
-        $FinalLDAPFilters = $LDAPFilters
-
-        if ($Identity) {
-            $FinalLDAPFilters += "|(name=$($Identity))(sAMAccountName=$($Identity))(cn=$($Identity))(DisplayName=$($Identity))"
-        }
-        else {
-            $FinalLDAPFilters += 'sAMAccountName=*'
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        $FinalLDAPFilters = @($FinalLDAPFilters | Select-Object -Unique)
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
+        }
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        if ($ChangeLogicOrder) {
-            # Join filters with logical OR
-            $FinalFilter = "(&($BaseFilter)(|({0})))" -f ($FinalLDAPFilters -join ')(')
-        }
-        else {
-            # Join filters with logical AND
-            $FinalFilter = "(&($BaseFilter)(&({0})))" -f ($FinalLDAPFilters -join ')(')
-        }
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
 
-        Write-Verbose "$($FunctionName): Searching with filter: $FinalFilter"
-
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $FinalFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
+            Get-DSObject @GetObjectParams
         }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
-        }
-        if ($ExpandUAC) {
-            $SearcherParams.ExpandUAC = $true
-        }
-        if ($Raw) {
-            $SearcherParams.Raw = $true
-        }
-
-        Get-DSObject @SearcherParams
     }
 }
 
@@ -6082,6 +5521,7 @@ $MyModulePath = $(
     Get-ScriptPath
 )
 
+
 $ExecutionContext.SessionState.Module.OnRemove = {
     # Action to take if the module is removed
 }
@@ -6090,9 +5530,19 @@ $null = Register-EngineEvent -SourceIdentifier ( [System.Management.Automation.P
     # Action to take if the whole pssession is killed
 }
 
+# Used in several functions to ignore parameters included with advanced functions
+$CommonParameters = Get-CommonParameters
+
+# Get a list of parameters for the get-dsobject command
+$GetDSObjectParameters = @()
+$_dsobjparams = (Get-Command Get-DSObject).Parameters
+$_dsobjparams.keys | Where { $Script:CommonParameters -notcontains $_ } | Foreach {
+    $GetDSObjectParameters += $_
+}
+
 # Use this in your scripts to check if the function is being called from your module or independantly.
 $ThisModuleLoaded = $true
-
+'Print Operators','Schema Admins' | Get-DSGroup
 <#
 $Mod = New-InMemoryModule -ModuleName Win32
 

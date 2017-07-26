@@ -22,17 +22,15 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
+        [Parameter(Position=0, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
         [Alias('Name','Forest','ForestName')]
         [string]$Identity = ($Script:CurrentForest).name,
 
-        [Parameter()]
+        [Parameter(Position=1)]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter(Position=2)]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]

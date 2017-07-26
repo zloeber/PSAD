@@ -1,8 +1,8 @@
----
+﻿---
 Module Name: PSAD
 Module Guid: 00000000-0000-0000-0000-000000000000
 Download Help Link: https://github.com/zloeber/PSAD/release/PSAD/docs/PSAD.md
-Help Version: 0.0.6
+Help Version: 0.0.5
 Locale: en-US
 ---
 
@@ -56,6 +56,12 @@ Gets the currently connected forest schema information.
 ### [Get-DSCurrentConnectionStatus](Get-DSCurrentConnectionStatus.md)
 Validate if Connect-ActiveDirectory has been run successfully already. Returns True if so.
 
+### [Get-DSDFS](Get-DSDFS.md)
+Retreives the DFS AD information
+
+### [Get-DSDFSR](Get-DSDFSR.md)
+Retreives the DFSR AD information
+
 ### [Get-DSDirectoryContext](Get-DSDirectoryContext.md)
 Get a DirectoryContext object for a specified context.
 
@@ -83,8 +89,11 @@ Retrieve an ADSI forest object.
 ### [Get-DSForestTrust](Get-DSForestTrust.md)
 Retrieve an ADSI forest object.
 
+### [Get-DSFRS](Get-DSFRS.md)
+Retreives the FRS AD information
+
 ### [Get-DSGPO](Get-DSGPO.md)
-Retreives GPOs as seen by Active Directory
+Get computer objects in a given directory service.
 
 ### [Get-DSGroup](Get-DSGroup.md)
 Get computer objects in a given directory service.
@@ -116,11 +125,17 @@ Retreives the optional directory features that are configured (such as the recyc
 ### [Get-DSPageSize](Get-DSPageSize.md)
 Returns module variable containing the currently used page size for AD queries.
 
-### [Get-DSSCCMServer](Get-DSSCCMServer.md)
+### [Get-DSSCCMManagementPoint](Get-DSSCCMManagementPoint.md)
 Retreives the SCCM AD information
+
+### [Get-DSSCCMServiceLocatorPoint](Get-DSSCCMServiceLocatorPoint.md)
+Retreives the SCCM service locator point AD information
 
 ### [Get-DSSchema](Get-DSSchema.md)
 Get information of the schema for the existing forest.
+
+### [Get-DSSID](Get-DSSID.md)
+Converts a given user/group name to a security identifier (SID).
 
 ### [Get-DSTombstoneLifetime](Get-DSTombstoneLifetime.md)
 Retreives the forest tombstone lifetime in days.
@@ -139,6 +154,5 @@ Sets module variable containing the currently used page size for AD queries.
 
 ### [Test-DSObjectPath](Test-DSObjectPath.md)
 A helper function to validate if an object path exists in AD.
-
 
 

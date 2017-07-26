@@ -25,22 +25,20 @@
     [CmdletBinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
         [Alias('Name','Domain','DomainName')]
         [string]$Identity = ($Script:CurrentDomain).name,
 
-        [Parameter()]
+        [Parameter( Position=1 )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter( Position=2 )]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
 
-        [Parameter()]
+        [Parameter( Position=3 )]
         [switch]$UpdateCurrent
     )
 

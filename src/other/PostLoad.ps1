@@ -20,6 +20,7 @@ $MyModulePath = $(
     Get-ScriptPath
 )
 
+
 $ExecutionContext.SessionState.Module.OnRemove = {
     # Action to take if the module is removed
 }
@@ -28,9 +29,19 @@ $null = Register-EngineEvent -SourceIdentifier ( [System.Management.Automation.P
     # Action to take if the whole pssession is killed
 }
 
+# Used in several functions to ignore parameters included with advanced functions
+$CommonParameters = Get-CommonParameters
+
+# Get a list of parameters for the get-dsobject command
+$GetDSObjectParameters = @()
+$_dsobjparams = (Get-Command Get-DSObject).Parameters
+$_dsobjparams.keys | Where { $Script:CommonParameters -notcontains $_ } | Foreach {
+    $GetDSObjectParameters += $_
+}
+
 # Use this in your scripts to check if the function is being called from your module or independantly.
 $ThisModuleLoaded = $true
-
+'Print Operators','Schema Admins' | Get-DSGroup
 <#
 $Mod = New-InMemoryModule -ModuleName Win32
 

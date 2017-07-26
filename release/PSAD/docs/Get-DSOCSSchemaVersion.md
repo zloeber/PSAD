@@ -1,6 +1,6 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/psad
 schema: 2.0.0
 ---
 
@@ -64,9 +64,9 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
-TBD
+Finding servers or topology in AD doesn't mean the servers or topology is live or accurate.
 
 ## RELATED LINKS
 
-[TBD]()
+[https://github.com/zloeber/psad](https://github.com/zloeber/psad)
 

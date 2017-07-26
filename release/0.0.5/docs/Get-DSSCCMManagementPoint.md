@@ -1,10 +1,10 @@
 ﻿---
 external help file: PSAD-help.xml
-online version: 
+online version: https://github.com/zloeber/psad
 schema: 2.0.0
 ---
 
-# Get-DSSCCMServer
+# Get-DSSCCMManagementPoint
 
 ## SYNOPSIS
 Retreives the SCCM AD information
@@ -12,7 +12,7 @@ Retreives the SCCM AD information
 ## SYNTAX
 
 ```
-Get-DSSCCMServer [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+Get-DSSCCMManagementPoint [[-ComputerName] <String>] [[-Credential] <PSCredential>]
 ```
 
 ## DESCRIPTION
@@ -22,10 +22,10 @@ Retreives the SCCM AD information
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-Get-DSSCCMServer
+Get-DSSCCMManagementPoint
 ```
 
-Returns the SCCM version found in the current forest
+Returns the SCCM servers and their version found in the current forest
 
 ## PARAMETERS
 
@@ -64,9 +64,9 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
-TBD
+Returns servers as defined in AD, they may not be 'live' though.
 
 ## RELATED LINKS
 
-[TBD]()
+[https://github.com/zloeber/psad](https://github.com/zloeber/psad)
 

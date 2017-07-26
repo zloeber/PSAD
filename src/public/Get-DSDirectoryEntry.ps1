@@ -109,11 +109,9 @@
             'CurrentUser' {
                 Write-Verbose "$($FunctionName): Current user."
                 if ([string]::IsNullOrEmpty($DistinguishedName)) {
-                    #[adsi]''
                     New-Object -TypeName System.DirectoryServices.DirectoryEntry
                 }
                 else {
-                    #[adsi]"$($PathType.ToUpper())://$($DistinguishedName)"
                     $fullPath = "$($PathType.ToUpper())://$($DistinguishedName)"
                     New-Object -TypeName System.DirectoryServices.DirectoryEntry -ArgumentList @($fullPath)
                 }

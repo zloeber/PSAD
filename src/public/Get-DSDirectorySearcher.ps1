@@ -35,6 +35,7 @@
     https://github.com/zloeber/PSAD
     #>
     [CmdletBinding()]
+    [OutputType([System.DirectoryServices.DirectorySearcher])]
     param(
         [Parameter()]
         [Alias('Server','ServerName')]
@@ -54,7 +55,7 @@
         [string]$SearchRoot,
 
         [Parameter()]
-        [string[]]$Filter = 'name=*',
+        [string]$Filter = 'distinguishedName=*',
 
         [Parameter()]
         [string[]]$Properties = @('Name','ADSPath'),
@@ -81,7 +82,15 @@
         Write-Verbose "$($FunctionName): Begin."
 
         $ADConnectState = Get-CredentialState -Credential $Credential -ComputerName $ComputerName
-        $SplitCreds = Split-Credential -Credential $Credential
+
+        # Get the list of parameters for the command
+        $PassedParams = @{}
+        foreach($p in @((Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters).Values ) {
+            if ($Script:CommonParameters -notcontains $p.Name) {
+                $PassedParams.($p.Name) = (Get-Variable -Name $p.Name -ErrorAction SilentlyContinue).Value
+            }
+        }
+        $Script:LastSearchSetting = new-object psobject -Property $PassedParams
     }
 
     process {
@@ -110,13 +119,7 @@
             }
         }
 
-        if (-not [string]::IsNullOrEmpty($Filter)) {
-            Write-Verbose "$($FunctionName): Joining ldap filters, total filters = $($Filter.Count)."
-            $LDAP = "(&({0}))" -f ($Filter -join ')(')
-            Write-Verbose "$($FunctionName): LDAP filter = $LDAP"
-        }
-
-        $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList @($domObj, $LDAP, $Properties) -Property @{
+        $objSearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher -ArgumentList @($domObj, $Filter, $Properties) -Property @{
             PageSize = $PageSize
             SearchScope = $SearchScope
             Tombstone = $TombStone

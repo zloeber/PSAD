@@ -12,11 +12,12 @@ Get AD objects of any kind.
 ## SYNTAX
 
 ```
-Get-DSObject [[-Identity] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
- [[-Limit] <Int32>] [[-SearchRoot] <String>] [[-Filter] <String[]>] [[-Properties] <String[]>]
- [[-PageSize] <Int32>] [[-SearchScope] <String>] [[-SecurityMask] <String>] [-TombStone]
- [-DontJoinAttributeValues] [-IncludeAllProperties] [-ExpandUAC] [-Raw] [-ChangeLogicOrder]
- [[-ResultsAs] <String>]
+Get-DSObject [[-Identity] <String>] [[-ComputerName] <String>] [-Credential <PSCredential>] [-Limit <Int32>]
+ [-SearchRoot <String>] [-Filter <String[]>] [-BaseFilter <String>] [-Properties <String[]>]
+ [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String>] [-TombStone] [-ChangeLogicOrder]
+ [-ModifiedAfter <DateTime>] [-ModifiedBefore <DateTime>] [-CreatedAfter <DateTime>]
+ [-CreatedBefore <DateTime>] [-DontJoinAttributeValues] [-IncludeAllProperties] [-IncludeNullProperties]
+ [-ExpandUAC] [-Raw] [-ResultsAs <String>]
 ```
 
 ## DESCRIPTION
@@ -39,13 +40,13 @@ Accepts distinguishedname, GUID, and samAccountName.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Name
+Aliases: User, Name, sAMAccountName, distinguishedName
 
 Required: False
 Position: 1
 Default value: None
 Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: True
+Accept wildcard characters: False
 ```
 
 ### -ComputerName
@@ -72,7 +73,7 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 3
+Position: Named
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -88,7 +89,7 @@ Parameter Sets: (All)
 Aliases: SizeLimit
 
 Required: False
-Position: 4
+Position: Named
 Default value: 0
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -103,14 +104,15 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 5
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
 ### -Filter
-LDAP filter for searches.
+Custom LDAP filters for searches.
+By default these are joined by logical AND.
 
 ```yaml
 Type: String[]
@@ -118,7 +120,22 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 6
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -BaseFilter
+In addition to custom filters use this as an immutable filter for searches.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -134,7 +151,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 7
+Position: Named
 Default value: @('Name','ADSPath')
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -149,7 +166,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 8
+Position: Named
 Default value: $Script:PageSize
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -164,7 +181,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 9
+Position: Named
 Default value: Subtree
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -179,7 +196,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 10
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -200,6 +217,81 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -ChangeLogicOrder
+Use logical OR instead of AND in custom LDAP filtering
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ModifiedAfter
+Account was modified after this time
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ModifiedBefore
+Account was modified before this time
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -CreatedAfter
+Account was created after this time
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -CreatedBefore
+Account was created before this time
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -DontJoinAttributeValues
 Output will automatically join the attributes unless this switch is set.
 
@@ -216,7 +308,22 @@ Accept wildcard characters: False
 ```
 
 ### -IncludeAllProperties
-Include all optional properties as defined in the schema (with or without values).
+Include all properties for an object.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -IncludeNullProperties
+Include unset (null) properties as defined in the schema (with or without values).
 This overrides the Properties parameter and can be extremely verbose.
 
 ```yaml
@@ -262,21 +369,6 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -ChangeLogicOrder
-Use logical OR instead of AND in LDAP filtering
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: 
-
-Required: False
-Position: Named
-Default value: False
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
 ### -ResultsAs
 How the results are returned.
 psobject (which includes interpretted properties), directoryentry, or searcher.
@@ -288,7 +380,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 11
+Position: Named
 Default value: Psobject
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -297,6 +389,12 @@ Accept wildcard characters: False
 ## INPUTS
 
 ## OUTPUTS
+
+### System.Object
+
+### System.DirectoryServices.DirectoryEntry
+
+### System.DirectoryServices.DirectorySearcher
 
 ## NOTES
 Author: Zachary Loeber

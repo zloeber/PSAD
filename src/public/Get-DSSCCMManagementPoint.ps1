@@ -1,4 +1,4 @@
-﻿function Get-DSSCCMServer {
+﻿function Get-DSSCCMManagementPoint {
     <#
     .SYNOPSIS
         Retreives the SCCM AD information
@@ -9,13 +9,13 @@
     .PARAMETER Credential
         Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSSCCMServer
+        PS> Get-DSSCCMManagementPoint
 
-        Returns the SCCM version found in the current forest
+        Returns the SCCM servers and their version found in the current forest
     .NOTES
-        TBD
+        Returns servers as defined in AD, they may not be 'live' though.
     .LINK
-        TBD
+        https://github.com/zloeber/psad
     #>
     [CmdletBinding()]
     param(
@@ -46,7 +46,7 @@
     end {
         if ((Test-DSObjectPath -Path $SysManageContext @DSParams)) {
 
-            $SCCMData = @(Get-DSObject -SearchRoot $SysManageContext @DSParams -Filter 'objectClass=mSSMSManagementPoint' -Properties mSSMSCapabilities,mSSMSMPName,dNSHostName,mSSMSSiteCode,mSSMSVersion,mSSMSDefaultMP,mSSMSDeviceManagementPoint)
+            $SCCMData = @(Get-DSObject -SearchRoot $SysManageContext @DSParams -Filter 'objectClass=mSSMSManagementPoint' -Properties name,mSSMSCapabilities,mSSMSMPName,dNSHostName,mSSMSSiteCode,mSSMSVersion,mSSMSDefaultMP,mSSMSDeviceManagementPoint,whenCreated)
 
             Foreach ($SCCM in $SCCMData) {
                 $SCCMxml = [XML]$SCCM.mSSMSCapabilities
@@ -60,13 +60,15 @@
                     $SCCMVer = $schemaVersionSCCM
                 }
                 New-Object -TypeName psobject -Property @{
+                    name = $SCCM.name
                     Version = $SCCMVer
-                    MPName = $SCCM.mSSMSMPName
-                    FQDN = $SCCM.dNSHostName
-                    SiteCode = $SCCM.mSSMSSiteCode
-                    SMSVersion = $SCCM.mSSMSVersion
-                    DefaultMP = $SCCM.mSSMSDefaultMP
-                    DeviceMP = $SCCM.mSSMSDeviceManagementPoint
+                    mSSMSMPName = $SCCM.mSSMSMPName
+                    dNSHostName = $SCCM.dNSHostName
+                    mSSMSSiteCode = $SCCM.mSSMSSiteCode
+                    mSSMSVersion = $SCCM.mSSMSVersion
+                    mSSMSDefaultMP = $SCCM.mSSMSDefaultMP
+                    mSSMSDeviceManagementPoint = $SCCM.mSSMSDeviceManagementPoint
+                    whenCreated = $SCCM.whenCreated
                 }
             }
         }

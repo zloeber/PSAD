@@ -13,7 +13,7 @@ Get a diresctory searcher object fro a given domain.
 
 ```
 Get-DSDirectorySearcher [[-ComputerName] <String>] [[-Credential] <PSCredential>] [[-Limit] <Int32>]
- [[-SearchRoot] <String>] [[-Filter] <String[]>] [[-Properties] <String[]>] [[-PageSize] <Int32>]
+ [[-SearchRoot] <String>] [[-Filter] <String>] [[-Properties] <String[]>] [[-PageSize] <Int32>]
  [[-SearchScope] <String>] [[-SecurityMask] <String>] [-TombStone]
 ```
 
@@ -96,13 +96,13 @@ Accept wildcard characters: False
 LDAP filter for searches.
 
 ```yaml
-Type: String[]
+Type: String
 Parameter Sets: (All)
 Aliases: 
 
 Required: False
 Position: 5
-Default value: Name=*
+Default value: DistinguishedName=*
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

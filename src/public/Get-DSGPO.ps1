@@ -1,11 +1,11 @@
 ﻿function Get-DSGPO {
     <#
     .SYNOPSIS
-    Retreives GPOs as seen by Active Directory
+    Get computer objects in a given directory service.
     .DESCRIPTION
-    Retreives GPOs as seen by Active Directory
+    Get computer objects in a given directory service. This is just a fancy wrapper for get-dsobject.
     .PARAMETER Identity
-    Name to search for.
+    Computer name to search for.
     .PARAMETER ComputerName
     Domain controller to use for this search.
     .PARAMETER Credential
@@ -18,6 +18,8 @@
     Root of search.
     .PARAMETER Filter
     LDAP filter for searches.
+    .PARAMETER ChangeLogicOrder
+    Use logical OR instead of AND in LDAP filtering
     .PARAMETER Properties
     Properties to include in output.
     .PARAMETER SearchScope
@@ -26,14 +28,16 @@
     Specifies the available options for examining security information of a directory object.
     .PARAMETER TombStone
     Whether the search should also return deleted objects that match the search filter.
-    .PARAMETER ChangeLogicOrder
-    Alter LDAP filter logic to use OR instead of AND
     .PARAMETER Raw
     Skip attempts to convert known property types.
     .PARAMETER DontJoinAttributeValues
     Output will automatically join the attributes unless this switch is set.
     .PARAMETER IncludeAllProperties
-    Include all optional properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    Include all properties for an object.
+    .PARAMETER IncludeNullProperties
+    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    .PARAMETER TrustedForDelegation
+    Computer is trusted for delegation
     .PARAMETER ModifiedAfter
     Computer was modified after this time
     .PARAMETER ModifiedBefore
@@ -47,81 +51,16 @@
     .PARAMETER MachineExtension
     Machine extension GUIDs to filter on.
     .EXAMPLE
-    TBD
+    PS> Get-DSGPO
+
+    List all GPOs for the current domain.
     .NOTES
-    TBD
+    NA
     .LINK
-    TBD
+    https://github.com/zloeber/PSAD
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or after this date.')]
-        [datetime]$ModifiedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers mofied on or before this date.')]
-        [datetime]$ModifiedBefore,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedAfter,
-
-        [Parameter(HelpMessage='Date to search for computers created on or after this date.')]
-        [datetime]$CreatedBefore,
-
         [Parameter()]
         [string[]]$UserExtension,
 
@@ -129,36 +68,21 @@
         [string[]]$MachineExtension
     )
 
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        # Base filter is the part of this filter that must always be met.
-        $BaseFilter = 'objectClass=groupPolicyContainer'
-        $LDAPFilters = @()
-
-        # Passed filters are joined with AND logic
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        if ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=groupPolicyContainer')
 
         # Filter on User Extension Filter.
         if ($UserExtension) {
@@ -169,55 +93,34 @@
         if ($MachineExtension) {
             $LDAPFilters += "|(gpcmachineextensionnames=*{0})" -f ($UserExtension -join '*)(gpcmachineextensionnames=*')
         }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        # Process the last filters here to keep them separated in case they are being passed via the pipeline
-        $FinalLDAPFilters = $LDAPFilters
-        if ($Identity) {
-            $FinalLDAPFilters += "|(name=$($Identity))(displayname=$($Identity))"
-        }
-        else {
-            $FinalLDAPFilters += "name=*"
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        $FinalLDAPFilters = $FinalLDAPFilters | Select -Unique
-        if ($ChangeLogicOrder) {
-            # Join filters with logical OR
-            $FinalFilter = "(&($BaseFilter)(|({0})))" -f ($FinalLDAPFilters -join ')(')
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
-        else {
-            # Join filters with logical AND
-            $FinalFilter = "(&($BaseFilter)(&({0})))" -f ($FinalLDAPFilters -join ')(')
-        }
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        Write-Verbose "$($FunctionName): Searching with filter: $FinalFilter"
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
 
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $FinalFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
+            Get-DSObject @GetObjectParams
         }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
-        }
-        if ($Raw) {
-            $SearcherParams.Raw = $true
-        }
-
-        Get-DSObject @SearcherParams
     }
 }

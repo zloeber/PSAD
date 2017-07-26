@@ -26,7 +26,7 @@ This function escapes them so they aren't treated as AD commands/characters.
 Format-DSSearchFilterValue -String "I have AD special characters (I think)."
 ```
 
-Returns 
+Returns
 
 I have AD special characters \28I think\29.
 

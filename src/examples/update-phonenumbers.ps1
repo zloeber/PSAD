@@ -1,6 +1,12 @@
 Import-Module PSAD
-$Cred = Get-Credential      # put in an admin account that can perform the updates
+
+# Prompt for an admin account that can perform the updates
+$Cred = Get-Credential
+
+# Connect to the current domain using the credentials (so we don't have to pass them in every call)
 Connect-DSAD -Credential $Cred
+
+# Import a csv of numbers
 $Users = Import-CSV 'C:\temp\ports.csv'
 $Users.Where{$_.PortRequested -ne 'FALSE'} | ForEach-Object {
     $ThisUser = Get-DSUser $_.ID -Properties samaccountname,telephonenumber,name,distinguishedname,mail
@@ -21,6 +27,6 @@ $Users.Where{$_.PortRequested -ne 'FALSE'} | ForEach-Object {
         OldNumber = $s4buser.LineURI
         NewNumber = $S4bNumber
     }
-    
+
     Set-CsOnlineVoiceUser -Identity $s4buser.Identity -TelephoneNumber $S4bNumber -Whatif
 }

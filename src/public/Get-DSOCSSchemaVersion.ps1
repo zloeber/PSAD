@@ -1,21 +1,21 @@
 ﻿function Get-DSOCSSchemaVersion {
     <#
     .SYNOPSIS
-        Retreives the OCS/Skype/Lync schema version and configuraiton partition location from active directory.
+    Retreives the OCS/Skype/Lync schema version and configuraiton partition location from active directory.
     .DESCRIPTION
-        Retreives the OCS/Skype/Lync schema version and configuraiton partition location from active directory.
+    Retreives the OCS/Skype/Lync schema version and configuraiton partition location from active directory.
     .PARAMETER ComputerName
-        Domain controller to use for this search.
+    Domain controller to use for this search.
     .PARAMETER Credential
-        Credentials to use for connection to AD.
+    Credentials to use for connection to AD.
     .EXAMPLE
-        PS> Get-DSOCSSchemaVersion
+    PS> Get-DSOCSSchemaVersion
 
-        Returns the OCS/Skype/Lync version found in the current forest and the partition that the version was found in.
+    Returns the OCS/Skype/Lync version found in the current forest and the partition that the version was found in.
     .NOTES
-        TBD
+    Finding servers or topology in AD doesn't mean the servers or topology is live or accurate.
     .LINK
-        TBD
+    https://github.com/zloeber/psad
     #>
     [CmdletBinding()]
     param(
@@ -42,7 +42,7 @@
         $DomNamingContext = $RootDSE.RootDomainNamingContext
         $ConfigContext = $RootDSE.configurationNamingContext
     }
-    
+
     end {
         # First get the schema version
         if ((Test-DSObjectPath -Path "CN=ms-RTC-SIP-SchemaVersion,$((Get-DSSchema).Name)" @DSParams)) {

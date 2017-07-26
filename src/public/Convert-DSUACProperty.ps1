@@ -21,7 +21,9 @@
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
         [string]$UACProperty
     )
-    Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    if ($Script:ThisModuleLoaded) {
+        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    }
     $FunctionName = $MyInvocation.MyCommand.Name
     Write-Verbose "$($FunctionName): Begin."
     try {

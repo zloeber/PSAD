@@ -34,6 +34,8 @@ and import the module to your session to test, but not install this module.
 0.0.1 - Initial Release
 0.0.2 - Some minor updates
 0.0.3 - Lots of fixes.
+0.0.4 - ???
+0.0.5 - Updated the module to properly handle null attributes and included more documentation
 
 ## Contribute
 
@@ -49,5 +51,7 @@ For more information on contributing go to [this link](docs/Contributing.md)
 ## Other Information
 
 **Author:** [Zachary Loeber](https://www.the-little-things.net)
-**Website:** https://github.com/zloeber/PSAD
+
+**Website:** [PSAD](https://github.com/zloeber/PSAD)
+
 **ReadTheDocs** [site](https://psad.readthedocs.io/en/latest)

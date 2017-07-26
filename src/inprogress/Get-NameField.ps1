@@ -1,26 +1,21 @@
 ﻿filter Get-NameField {
-<#
+    <#
     .SYNOPSIS
-    
-        Helper that attempts to extract appropriate field names from
-        passed computer objects.
+    Helper that attempts to extract appropriate field names from
+    passed computer objects.
 
     .PARAMETER Object
-
-        The passed object to extract name fields from.
+    The passed object to extract name fields from.
 
     .PARAMETER DnsHostName
-        
-        A DnsHostName to extract through ValueFromPipelineByPropertyName.
+    A DnsHostName to extract through ValueFromPipelineByPropertyName.
 
     .PARAMETER Name
-        
-        A Name to extract through ValueFromPipelineByPropertyName.
+    A Name to extract through ValueFromPipelineByPropertyName.
 
     .EXAMPLE
-
-        PS C:\> Get-NetComputer -FullData | Get-NameField
-#>
+    PS C:\> Get-NetComputer -FullData | Get-NameField
+    #>
     [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]

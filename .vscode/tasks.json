@@ -35,7 +35,8 @@
             "isBuildCommand": true,
             "args": [
                 "${workspaceRoot}\\Build.ps1"
-            ]
+            ],
+            "problemMatcher": []
         },
         {
             "taskName": "Build, Install, and Load Module",

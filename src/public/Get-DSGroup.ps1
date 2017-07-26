@@ -18,6 +18,10 @@
     Root of search.
     .PARAMETER Filter
     LDAP filter for searches.
+    .PARAMETER BaseFilter
+    Unused
+    .PARAMETER ChangeLogicOrder
+    Use logical OR instead of AND in LDAP filtering
     .PARAMETER Properties
     Properties to include in output.
     .PARAMETER SearchScope
@@ -31,7 +35,9 @@
     .PARAMETER DontJoinAttributeValues
     Output will automatically join the attributes unless this switch is set.
     .PARAMETER IncludeAllProperties
-    Include all optional properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    Include all properties for an object.
+    .PARAMETER IncludeNullProperties
+    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
     .PARAMETER TrustedForDelegation
     Computer is trusted for delegation
     .PARAMETER ModifiedAfter
@@ -46,187 +52,96 @@
     Group category, either security or distribution
     .PARAMETER AdminCount
     AdminCount is 1 or greater
-    .PARAMETER ChangeLogicOrder
-    Use logical OR instead of AND in LDAP filtering
+    .PARAMETER Empty
+    Include only empty groups
     .EXAMPLE
-    TBD
+    PS> Get-DSGroup 'Domain Admins'
+
+    Returns the 'domain admins' group for the current domain.
+    .EXAMPLE
+    PS> get-dsgroup -Properties name,groupcategory,groupscope -empty
+
+    Returns all empty groups along with their scope and category
+
     #>
-    [CmdletBinding()]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Group','Name')]
-        [string]$Identity,
-
-        [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-
-        [Parameter()]
-        [Alias('SizeLimit')]
-        [int]$Limit = 0,
-
-        [Parameter()]
-        [string]$SearchRoot,
-
-        [Parameter()]
-        [string[]]$Filter,
-
-        [Parameter()]
-        [string[]]$Properties = @('Name','ADSPath'),
-
-        [Parameter()]
-        [int]$PageSize = $Script:PageSize,
-
-        [Parameter()]
-        [ValidateSet('Subtree', 'OneLevel', 'Base')]
-        [string]$SearchScope = 'Subtree',
-
-        [Parameter()]
-        [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
-
-        [Parameter()]
-        [switch]$TombStone,
-
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter()]
-        [switch]$ChangeLogicOrder,
-
-        [Parameter()]
-        [datetime]$ModifiedAfter,
-
-        [Parameter()]
-        [datetime]$ModifiedBefore,
-
-        [Parameter()]
-        [datetime]$CreatedAfter,
-
-        [Parameter()]
-        [datetime]$CreatedBefore,
-
         [Parameter()]
         [ValidateSet('Security','Distribution')]
         [string]$Category,
 
         [Parameter()]
-        [switch]$AdminCount
+        [switch]$AdminCount,
+
+        [Parameter()]
+        [switch]$Empty
+
     )
+
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
 
     begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        # Build filter
-        $CompLDAPFilter = 'objectCategory=Group'
-        $LDAPFilters = @()
-
-        if ($Filter.Count -ge 1) {
-            $LDAPFilters += "(&({0}))" -f ($Filter -join ')(')
-        }
-
-        # Filter for modification time
-        if ($ModifiedAfter -and $ModifiedBefore) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ')))(whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($ModifiedAfter) {
-            $LDAPFilters += "whenChanged>=$($ModifiedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($ModifiedBefore) {
-            $LDAPFilters += "whenChanged<=$($ModifiedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        # Filter for creation time
-        if ($CreatedAfter -and $CreatedBefore) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ')))(whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($CreatedAfter) {
-            $LDAPFilters +=  "whencreated>=$($CreatedAfter.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-        elseif ($CreatedBefore) {
-            $LDAPFilters += "whencreated<=$($CreatedBefore.ToString('yyyyMMddhhmmss.sZ'))"
-        }
-
-        if ($Identity) {
-            $Identity = Format-ADSearchFilterValue -String $Identity
-            $LDAPFilters += "|(name=$($Identity))(sAMAccountName=$($Identity))(cn=$($Identity))"
-        }
-        else {
-            $LDAPFilters += 'name=*'
-        }
-       # Filter for accounts who have an adcmicount filed higher than 0.
-        if ($AdminCount) {
-            $LDAPFilters += "admincount>=1"
-        }
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=Group')
 
         # Filter by category
         if ($Category) {
             switch ($category) {
                 'Distribution' {
-                    $LDAPFilters += '!(groupType:1.2.840.113556.1.4.803:=2147483648)'
+                    $BaseFilters += '!(groupType:1.2.840.113556.1.4.803:=2147483648)'
                 }
                 'Security' {
-                    $LDAPFilters += 'groupType:1.2.840.113556.1.4.803:=2147483648'
+                    $BaseFilters += 'groupType:1.2.840.113556.1.4.803:=2147483648'
                 }
             }
         }
 
-        $LDAPFilters = $LDAPFilters | Select -Unique
+        # Filter for accounts who have an adcmicount filed higher than 0.
+        if ($AdminCount) {
+            $BaseFilters += "admincount>=1"
+        }
 
-        if ($ChangeLogicOrder) {
-            $GroupFilter = "(&($CompLDAPFilter)(|({0})))" -f ($LDAPFilters -join ')(')
+        if ($Empty) {
+            $BaseFilters += "!(member=*)"
         }
-        else {
-            $GroupFilter = "(&($CompLDAPFilter)(&({0})))" -f ($LDAPFilters -join ')(')
-        }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
     process {
-        Write-Verbose "$($FunctionName): Searching with filter: $GroupFilter"
-
-         $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Limit = $Limit
-            Credential = $Credential
-            Filter = $GroupFilter
-            Properties = $Properties
-            PageSize = $PageSize
-            SecurityMask = $SecurityMask
-        }
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-        if ($IncludeAllProperties) {
-            $SearcherParams.IncludeAllProperties = $true
-        }
-        if ($DontJoinAttributeValues) {
-            $SearcherParams.DontJoinAttributeValues = $true
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
         }
 
-        if ($Raw) {
-            $SearcherParams.Raw = $true
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
         }
+        $GetObjectParams.BaseFilter = $BaseFilter
 
-        Get-DSObject @SearcherParams
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams
+        }
     }
 }

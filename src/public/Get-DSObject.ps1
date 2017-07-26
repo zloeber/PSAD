@@ -17,7 +17,11 @@
     .PARAMETER SearchRoot
     Root of search.
     .PARAMETER Filter
-    LDAP filter for searches.
+    Custom LDAP filters for searches. By default these are joined by logical AND.
+    .PARAMETER BaseFilter
+    In addition to custom filters use this as an immutable filter for searches.
+    .PARAMETER ChangeLogicOrder
+    Use logical OR instead of AND in custom LDAP filtering
     .PARAMETER Properties
     Properties to include in output. Is not used if ResultsAs is set to directoryentry.
     .PARAMETER SearchScope
@@ -29,15 +33,23 @@
     .PARAMETER DontJoinAttributeValues
     Output will automatically join the attributes unless this switch is set.
     .PARAMETER IncludeAllProperties
-    Include all optional properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    Include all properties for an object.
+    .PARAMETER IncludeNullProperties
+    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    .PARAMETER ModifiedAfter
+    Account was modified after this time
+    .PARAMETER ModifiedBefore
+    Account was modified before this time
+    .PARAMETER CreatedAfter
+    Account was created after this time
+    .PARAMETER CreatedBefore
+    Account was created before this time
     .PARAMETER ExpandUAC
     Expands the UAC attribute into readable format. Only effective if the ResultsAs parameter is psobject
     .PARAMETER Raw
     Skip attempts to convert known property types but still returns a psobject.
     .PARAMETER ResultsAs
     How the results are returned. psobject (which includes interpretted properties), directoryentry, or searcher. Default is psobject.
-    .PARAMETER ChangeLogicOrder
-    Use logical OR instead of AND in LDAP filtering
     .EXAMPLE
     TBD
     .NOTES
@@ -47,65 +59,83 @@
     #>
 
     [CmdletBinding()]
+    [OutputType([object],[System.DirectoryServices.DirectoryEntry],[System.DirectoryServices.DirectorySearcher])]
     param(
-        [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [SupportsWildcards()]
-        [Alias('Name')]
+        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive. Accepts distinguishedname, GUID, and samAccountName.')]
+        [Alias('User', 'Name', 'sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
-        [Parameter()]
+        [Parameter( position = 1, HelpMessage='Domain controller to use for this search.' )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Credentials to connect with.' )]
         [alias('Creds')]
         [Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Limit results. If zero there is no limit.')]
         [Alias('SizeLimit')]
         [int]$Limit = 0,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Root path to search.')]
         [string]$SearchRoot,
 
-        [Parameter()]
+        [Parameter(HelpMessage='LDAP filters to use.')]
         [string[]]$Filter,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Immutable base ldap filter to use.')]
+        [string]$BaseFilter,
+
+        [Parameter(HelpMessage='LDAP properties to return')]
         [string[]]$Properties = @('Name','ADSPath'),
 
-        [Parameter()]
+        [Parameter(HelpMessage='Page size for larger results.')]
         [int]$PageSize = $Script:PageSize,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Type of search.')]
         [ValidateSet('Subtree', 'OneLevel', 'Base')]
         [string]$SearchScope = 'Subtree',
 
-        [Parameter()]
+        [Parameter(HelpMessage='Security mask for search.')]
         [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
         [string]$SecurityMask = 'None',
 
-        [Parameter()]
+        [Parameter(HelpMessage='Include tombstone objects.')]
         [switch]$TombStone,
 
-        [Parameter()]
-        [switch]$DontJoinAttributeValues,
-
-        [Parameter()]
-        [switch]$IncludeAllProperties,
-
-        [Parameter()]
-        [switch]$ExpandUAC,
-
-        [Parameter()]
-        [switch]$Raw,
-
-        [Parameter()]
+        [Parameter(HelpMessage='Use logical OR instead of AND for custom LDAP filters.')]
         [switch]$ChangeLogicOrder,
 
-        [Parameter()]
+        [Parameter(HelpMessage='Only include objects modified after this date.')]
+        [datetime]$ModifiedAfter,
+
+        [Parameter(HelpMessage='Only include objects modified before this date.')]
+        [datetime]$ModifiedBefore,
+
+        [Parameter(HelpMessage='Only include objects created after this date.')]
+        [datetime]$CreatedAfter,
+
+        [Parameter(HelpMessage='Only include objects created before this date.')]
+        [datetime]$CreatedBefore,
+
+        [Parameter(HelpMessage='Do not joine attribute values in output.')]
+        [switch]$DontJoinAttributeValues,
+
+        [Parameter(HelpMessage='Include all properties that have a value')]
+        [switch]$IncludeAllProperties,
+
+        [Parameter(HelpMessage='Include null property values')]
+        [switch]$IncludeNullProperties,
+
+        [Parameter(HelpMessage='Expand useraccountcontroll property (if it exists).')]
+        [switch]$ExpandUAC,
+
+        [Parameter(HelpMessage='Do no property transformations in output.')]
+        [switch]$Raw,
+
+        [Parameter(HelpMessage='How you want the results to be returned.')]
         [ValidateSet('psobject', 'directoryentry', 'searcher')]
         [string]$ResultsAs = 'psobject'
     )
@@ -116,56 +146,37 @@
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        $SearcherParams = @{
-            ComputerName = $ComputerName
-            SearchRoot = $searchRoot
-            SearchScope = $SearchScope
-            Credential = $Credential
-            Properties = $Properties
-            SecurityMask = $SecurityMask
-        }
     }
     Process {
-        # Build the filter
-        $LDAPFilters = Get-CommonIDLDAPFilter -Identity $Identity -Filter $Filter
-        if (-not [string]::IsNullOrEmpty($Identity)) {
-            # If an identity was passed then change to or logic
-            $ChangeLogicOrder = $true
+        $SearcherParams = Get-CommonSearcherParams `
+            -Identity $Identity `
+            -ComputerName $ComputerName `
+            -Credential $Credential `
+            -Limit $Limit `
+            -SearchRoot $SearchRoot `
+            -Filter $Filter `
+            -BaseFilter $BaseFilter `
+            -Properties $Properties `
+            -PageSize $PageSize `
+            -SearchScope $SearchScope `
+            -SecurityMask $SecurityMask `
+            -TombStone $TombStone `
+            -ChangeLogicOrder $ChangeLogicOrder `
+            -ModifiedAfter $ModifiedAfter `
+            -ModifiedBefore $ModifiedBefore `
+            -CreatedAfter $CreatedAfter `
+            -CreatedBefore $CreatedBefore `
+            -IncludeAllProperties $IncludeAllProperties `
+            -IncludeNullProperties $IncludeNullProperties
+
+        # Store for later reference
+        try {
+            $objSearcher = Get-DSDirectorySearcher @SearcherParams
+        }
+        catch {
+            throw $_
         }
 
-        if ($ChangeLogicOrder) {
-            Write-Verbose "$($FunctionName): Combining filters with OR logic."
-            $SearcherParams.Filter = "(&(|({0})))" -f ($LDAPFilters -join ')(')
-        }
-        else {
-            Write-Verbose "$($FunctionName): Combining filters with AND logic."
-            $SearcherParams.Filter = "(&(&({0})))" -f ($LDAPFilters -join ')(')
-        }
-
-        if ($IncludeAllProperties) {
-            Write-Verbose "$($FunctionName): Including all properties. Any passed properties will be ignored."
-            $SearcherParams.Properties = '*'
-        }
-
-        if ($Tombstone) {
-            Write-Verbose "$($FunctionName): Including tombstone items"
-            $SearcherParams.Tombstone = $true
-        }
-
-        # If a limit is set then use it to limit our results, otherwise use the page size (which doesn't limit results)
-        if ($Limit -ne 0) {
-            $SearcherParams.Limit = $Limit
-        }
-        else {
-            $SearcherParams.PageSize = $PageSize
-        }
-
-        # Store the search settings for later inspection if required
-        $Script:LastSearchSetting = $SearcherParams
-
-        Write-Verbose "$($FunctionName): Searching with filter: $LDAPFilter"
-
-        $objSearcher = Get-DSDirectorySearcher @SearcherParams
         switch ($ResultsAs) {
             'directoryentry' {
                 $objSearcher.findall() | Foreach {
@@ -218,7 +229,7 @@
                                             $Val = '<Never>'
                                         }
                                     }
-                                { @('pwdlastset', 'lastlogon', 'badpasswordtime') -contains $_ } {
+                                    { @('pwdlastset', 'lastlogon', 'badpasswordtime') -contains $_ } {
                                         Write-Verbose "$($FunctionName): Reformatting $Prop"
                                         $Val = [dateTime]::FromFileTime($Val[0])
                                     }
@@ -304,7 +315,8 @@
 
                     # Only return results that have more than 0 properties
                     if ($ObjectProps.psbase.keys.count -ge 1) {
-                        if ($IncludeAllProperties) {
+                        # if we include all or even null properties then we poll the schema for our object's possible properties
+                        if ($IncludeAllProperties -or $IncludeNullProperties) {
                             if (-not ($Script:__ad_schema_info.ContainsKey($ObjClass))) {
                                 Write-Verbose "$($FunctionName): Storing schema attributes for $ObjClass for the first time"
                                 Write-Verbose "$($FunctionName): Object class being queried for in the schema = $objClass"
@@ -314,14 +326,38 @@
                                 Write-Verbose "$($FunctionName): $ObjClass schema properties already loaded"
                             }
 
-                            ($Script:__ad_schema_info).$ObjClass | Foreach {
-                                if (-not ($ObjectProps.ContainsKey($_))) {
-                                    $ObjectProps.$_ = $null
+                            if ($IncludeAllProperties -and $IncludeNullProperties) {
+                                ($Script:__ad_schema_info).$ObjClass | Foreach {
+                                    if (-not ($ObjectProps.ContainsKey($_))) {
+                                        # If the property exists in the schema but not in the searcher results
+                                        # then it gets assigned a null value.
+                                        $ObjectProps.$_ = $null
+                                    }
+                                }
+                            }
+                            elseif ($IncludeNullProperties) {
+                                ($Script:__ad_schema_info).$ObjClass | Where {$Properties -contains $_}| Foreach {
+                                    if (-not ($ObjectProps.ContainsKey($_))) {
+                                        # If the property exists in the schema and our passed properties but not in
+                                        # the searcher results then it gets assigned a null value.
+                                        # This eliminates properties that may get passed by a user but that
+                                        # don't exist on object.
+                                        $ObjectProps.$_ = $null
+                                    }
                                 }
                             }
                         }
-
-                        New-Object PSObject -Property $ObjectProps | Select-Object $Properties
+                        if (-not $IncludeAllProperties) {
+                            # We only want to return properties that actually exist on the object
+                            $Properties2 = $Properties | Where {$ObjectProps.ContainsKey($_)}
+                        }
+                        else {
+                            # Or all the properties
+                            $Properties2 = '*'
+                        }
+                        if ($null -ne $Properties2) {
+                            New-Object PSObject -Property $ObjectProps | Select-Object $Properties2
+                        }
                     }
                 }
             }
