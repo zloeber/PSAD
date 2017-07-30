@@ -35,7 +35,7 @@ Retrieves all domain admin group members, including those within embedded groups
 ## PARAMETERS
 
 ### -Recurse
-Computer was modified after this time
+Return all members of a group, even if they are in another group.
 
 ```yaml
 Type: SwitchParameter

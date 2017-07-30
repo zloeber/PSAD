@@ -7,7 +7,7 @@ schema: 2.0.0
 # Get-DSGroup
 
 ## SYNOPSIS
-Get computer objects in a given directory service.
+Get group objects in a given directory service.
 
 ## SYNTAX
 
@@ -21,7 +21,7 @@ Get-DSGroup [-Category <String>] [-AdminCount] [-Empty] [-Identity <String>] [-C
 ```
 
 ## DESCRIPTION
-Get computer objects in a given directory service.
+Get group objects in a given directory service.
 This is just a fancy wrapper for get-dsobject.
 
 ## EXAMPLES
@@ -439,6 +439,9 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
+Author: Zachary Loeber
 
 ## RELATED LINKS
+
+[https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 

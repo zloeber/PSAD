@@ -33,11 +33,10 @@ $null = Register-EngineEvent -SourceIdentifier ( [System.Management.Automation.P
 $CommonParameters = Get-CommonParameters
 
 # Get a list of parameters for the get-dsobject command
-$GetDSObjectParameters = @()
-$_dsobjparams = (Get-Command Get-DSObject).Parameters
-$_dsobjparams.keys | Where { $Script:CommonParameters -notcontains $_ } | Foreach {
-    $GetDSObjectParameters += $_
-}
+$GetDSObjectParameters = Get-CommandParams -CommandName 'Get-DSObject' -CommandType 'Function'
+
+# Get a list of parameters for the get-dsdirectoryentry command
+$GetDSDirectoryEntryParameters = Get-CommandParams -CommandName 'Get-DSDirectoryEntry' -CommandType 'Function'
 
 # Use this in your scripts to check if the function is being called from your module or independantly.
 $ThisModuleLoaded = $true

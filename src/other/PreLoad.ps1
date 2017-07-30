@@ -425,3 +425,23 @@ $Attrib_User_MSExchangeVersion = @{
     '4535486012416' = '2007'
     '44220983382016' = '2010'
 }
+
+$DomainFunctionalLevel = @{
+    '0' = 'Windows 2000 Native'
+    '1' = 'Windows Server 2003 Interim'
+    '2' = 'Windows Server 2003'
+    '3' = 'Windows Server 2008'
+    '4' = 'Windows Server 2008 R2'
+    '5' = 'Windows Server 2012'
+    '6' = 'Windows Server 2012 R2'
+}
+
+$ForestFunctionalLevel = @{
+    '0' = 'Windows 2000 Native'
+    '1' = 'Windows Server 2003 Interim'
+    '2' = 'Windows Server 2003'
+    '3' = 'Windows Server 2008'
+    '4' = 'Windows Server 2008 R2'
+    '5' = 'Windows Server 2012'
+    '6' = 'Windows Server 2012 R2'
+}

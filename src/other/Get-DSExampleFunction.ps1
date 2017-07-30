@@ -1,72 +1,114 @@
-function Get-DSExample {
-<#
-.SYNOPSIS
-    
-.DESCRIPTION
-    
-.PARAMETER ComputerName
-    Fully Qualified Name of a remote domain controller to connect to.
-.PARAMETER Credential
-    Alternate credentials for retrieving forest information.
-.PARAMETER Identity
-    Identity to search for
-.EXAMPLE
+function Get-DSWhatever {
+    <#
+    .SYNOPSIS
+    Get computer objects in a given directory service.
+    .DESCRIPTION
+    Get computer objects in a given directory service. This is just a fancy wrapper for get-dsobject.
+    .PARAMETER Identity
+    Computer name to search for.
+    .PARAMETER ComputerName
+    Domain controller to use for this search.
+    .PARAMETER Credential
+    Credentials to use for connection to AD.
+    .PARAMETER BaseFilter
+    Unused
+    .PARAMETER Limit
+    Limits items retrieved. If set to 0 then there is no limit.
+    .PARAMETER PageSize
+    Items returned per page.
+    .PARAMETER SearchRoot
+    Root of search.
+    .PARAMETER Filter
+    LDAP filter for searches.
+    .PARAMETER ChangeLogicOrder
+    Use logical OR instead of AND in LDAP filtering
+    .PARAMETER Properties
+    Properties to include in output.
+    .PARAMETER SearchScope
+    Scope of a search as either a base, one-level, or subtree search, default is subtree.
+    .PARAMETER SecurityMask
+    Specifies the available options for examining security information of a directory object.
+    .PARAMETER TombStone
+    Whether the search should also return deleted objects that match the search filter.
+    .PARAMETER Raw
+    Skip attempts to convert known property types.
+    .PARAMETER DontJoinAttributeValues
+    Output will automatically join the attributes unless this switch is set.
+    .PARAMETER IncludeAllProperties
+    Include all properties for an object.
+    .PARAMETER IncludeNullProperties
+    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
+    .PARAMETER TrustedForDelegation
+    Computer is trusted for delegation
+    .PARAMETER ModifiedAfter
+    Computer was modified after this time
+    .PARAMETER ModifiedBefore
+    Computer was modified before this time
+    .PARAMETER CreatedAfter
+    Computer was created after this time
+    .PARAMETER CreatedBefore
+    Computer was created before this time
+    .EXAMPLE
     TBD
-.LINK
+    .NOTES
     NA
-.NOTES
-    TBD
-#>
-    [CmdletBinding()]
+    .LINK
+    https://github.com/zloeber/PSAD
+    #>
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [ValidateNotNullOrEmpty()]
-        [SupportsWildcards()]
-        [Alias('Name')]
-        [string]$Identity,
-
         [Parameter()]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter()]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [switch]$AdminCount
     )
 
-    Begin {
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
+    begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
-        $ADConnectState = Get-CredentialState -Credential $Credential -ComputerName $ComputerName
-        $SplitCreds = Split-Credential -Credential $Credential
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=somecategory')
+
+        # Filter for accounts who have an adcmicount filed higher than 0.
+        if ($AdminCount) {
+            $BaseFilters += "admincount>=1"
+        }
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+
+        $Identities = @()
     }
 
-    Process {
-        switch ( $ADConnectState ) {
-            'AltUserAndServer' {
-                Write-Verbose "$($FunctionName): Alternate user and server."
-                # Action
-            }
-            'AltUser' {
-                Write-Verbose "$($FunctionName): Alternate user."
-                # Action
-            }
-            'CurrentUserAltServer' {
-                Write-Verbose "$($FunctionName): Current user, alternate server."
-                # Action
-            }
-            'CurrentUser' {
-                Write-Verbose "$($FunctionName): Current user."
-                # Action
-            }
-            Default {
-                Write-Error "$($FunctionName): Unable to connect to AD!"
-            }
+    process {
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+        }
+
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
+        }
+        $GetObjectParams.BaseFilter = $BaseFilter
+
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams
         }
     }
 }

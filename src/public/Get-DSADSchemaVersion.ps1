@@ -9,7 +9,7 @@
     .PARAMETER Credential
     Credentials to use for connection to AD.
     .EXAMPLE
-    PS> Get-DSADSchemaVersion
+    PS> Get-DSADFunctionalLevel
     .NOTES
     Author: Zachary Loeber
     .LINK

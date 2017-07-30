@@ -34,21 +34,21 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
+        [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true, HelpMessage = 'The distinguished name of the directory entry to retrieve.')]
         [Alias('DN')]
         [string]$DistinguishedName,
 
-        [Parameter()]
+        [Parameter(HelpMessage = 'Domain controller to connect to for the query.')]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter()]
+        [Parameter(HelpMessage = 'Credential to use for connection.')]
         [Alias('Creds')]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential = $Script:CurrentCredential,
 
-        [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
+        [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true, HelpMessage = 'Query LDAP or Global Catalog (GC), default is LDAP')]
         [ValidateSet('LDAP', 'GC')]
         [string]$PathType = 'LDAP'
     )

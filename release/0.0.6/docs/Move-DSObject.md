@@ -4,41 +4,48 @@ online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
-# Get-DSConfigPartitionObject
+# Move-DSObject
 
 ## SYNOPSIS
-A helper function for retreiving a configuration partition object.
+Move AD objects to another OU.
 
 ## SYNTAX
 
 ```
-Get-DSConfigPartitionObject [[-ComputerName] <String>] [[-Credential] <PSCredential>] [[-SearchPath] <String>]
- [[-Properties] <String[]>] [[-SearchScope] <String>]
+Move-DSObject [-Identity <String[]>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+ [[-Destination] <String>] [-Force] [-WhatIf] [-Confirm]
 ```
 
 ## DESCRIPTION
-A helper function for retreiving a configuration partition object.
+Move AD objects to another OU.
 
 ## EXAMPLES
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-Get-DSConfigPartitionObject -SearchPath 'CN=ms-Exch-Schema-Version-Pt,CN=Schema' -Properties '*'
+TBD
 ```
-
-Returns the exchange version found in the current forest.
-
-### -------------------------- EXAMPLE 2 --------------------------
-```
-Get-DSConfigPartitionObject -SearchPath 'CN=Certification Authorities,CN=Public Key Services,CN=Services' -SearchScope:OneLevel -Properties 'name'
-```
-
-Lists all forest enterprise certificate authorities
 
 ## PARAMETERS
 
+### -Identity
+Object to move.
+Accepts DN, GUID, and name formats.
+
+```yaml
+Type: String[]
+Parameter Sets: (All)
+Aliases: Name
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: True (ByPropertyName, ByValue)
+Accept wildcard characters: False
+```
+
 ### -ComputerName
-Domain controller to use for this search.
+Domain controller to use for this move.
 
 ```yaml
 Type: String
@@ -46,7 +53,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: 1
+Position: 2
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -61,54 +68,69 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 2
+Position: 3
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -SearchPath
-Additional path to retreive (ie.
-CN=ms-Exch-Schema-Version-Pt,CN=Schema)
+### -Destination
+Desination OU to move objects into.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: 
+Aliases: OU, TargetPath
 
 Required: False
-Position: 3
+Position: 4
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Properties
-Properties to retreive.
+### -Force
+Force move to OU without confirmation.
 
 ```yaml
-Type: String[]
-Parameter Sets: (All)
-Aliases: 
-
-Required: False
-Position: 4
-Default value: @('Name','ADSPath')
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -SearchScope
-Scope of a search as either a base, one-level, or subtree search, default is base.
-
-```yaml
-Type: String
+Type: SwitchParameter
 Parameter Sets: (All)
 Aliases: 
 
 Required: False
 Position: 5
-Default value: Base
+Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -WhatIf
+Shows what would happen if the cmdlet runs.
+The cmdlet is not run.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: wi
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Confirm
+Prompts you for confirmation before running the cmdlet.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: cf
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

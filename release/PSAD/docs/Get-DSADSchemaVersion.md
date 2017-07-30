@@ -22,7 +22,7 @@ Retreives the active directory schema version in human readable format.
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-Get-DSADSchemaVersion
+Get-DSADFunctionalLevel
 ```
 
 ## PARAMETERS

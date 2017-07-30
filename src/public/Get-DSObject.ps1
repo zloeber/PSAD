@@ -142,7 +142,9 @@
 
     Begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
@@ -153,7 +155,7 @@
             -ComputerName $ComputerName `
             -Credential $Credential `
             -Limit $Limit `
-            -SearchRoot $SearchRoot `
+            -SearchRoot ($SearchRoot -replace 'LDAP://','') `
             -Filter $Filter `
             -BaseFilter $BaseFilter `
             -Properties $Properties `
@@ -349,7 +351,7 @@
                         }
                         if (-not $IncludeAllProperties) {
                             # We only want to return properties that actually exist on the object
-                            $Properties2 = $Properties | Where {$ObjectProps.ContainsKey($_)}
+                            $Properties2 = $Properties | Where {$null -ne $_} | Where {$ObjectProps.ContainsKey($_)}
                         }
                         else {
                             # Or all the properties

@@ -12,8 +12,8 @@ Get a DirectoryEntry object for a specified distinguished name.
 ## SYNTAX
 
 ```
-Get-DSDirectoryEntry [[-DistinguishedName] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
- [[-PathType] <String>]
+Get-DSDirectoryEntry [[-DistinguishedName] <String>] [-ComputerName <String>] [-Credential <PSCredential>]
+ [-PathType <String>]
 ```
 
 ## DESCRIPTION
@@ -68,7 +68,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: 2
+Position: Named
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -83,7 +83,7 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 3
+Position: Named
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -99,7 +99,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 4
+Position: Named
 Default value: LDAP
 Accept pipeline input: True (ByPropertyName, ByValue)
 Accept wildcard characters: False

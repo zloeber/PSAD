@@ -39,7 +39,7 @@ Function Get-CommonIDLDAPFilter {
 
 		# Do this to capture regular accounts as well as computer accounts (include a $ at the end)
 		$SAMNameFilter = @("samaccountname=$ObjID","samaccountname=$ObjID$")
-		$Filter = @("distinguishedName=$ObjID","objectGUID=$ObjID") + (Get-CombinedLDAPFilter -Filter $SAMNameFilter -Conditional '|')
+		$Filter = @("distinguishedName=$ObjID","objectGUID=$ObjID",,"cn=$ObjID") + (Get-CombinedLDAPFilter -Filter $SAMNameFilter -Conditional '|')
 	}
 
 	Get-CombinedLDAPFilter -Filter $Filter -Conditional '|'

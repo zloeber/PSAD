@@ -31,7 +31,9 @@
     )
 
     begin {
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
         $DSParams = @{
@@ -40,7 +42,7 @@
         }
 
         $ExchangeConfig = @(Get-DSExchangeSchemaVersion @DSParams)
-        if ($ExchangeConfig -eq $null) {
+        if ($null -eq $ExchangeConfig) {
             # Exchange isn't in the environment
             Write-Verbose "$($FunctionName): No exchange environment found."
             return $null
@@ -58,21 +60,20 @@
             'msExchFedTargetAutodiscoverEPR',
             'msExchVersion'
         )
-        $ConfigNamingContext = (Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams).configurationNamingContext
+        $ConfigNamingContext = (Get-DSConfigPartition @DSParams).distinguishedname
         $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
         $ExchangeFederations = @()
     }
 
     end {
         if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
-
             $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
 
             ForEach ($ExchOrg in $ExchOrgs) {
-                $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
+                $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
 
                 # Get all found Exchange federations
-                $ExchangeFeds = @(Get-DSObject -Filter 'objectCategory=msExchFedSharingRelationship' -SearchRoot "LDAP://CN=Federation,$([string]$ExchOrg.distinguishedname)"  -SearchScope:SubTree -Properties $Props_ExchFeds)
+                $ExchangeFeds = @(Get-DSObject -Filter 'objectCategory=msExchFedSharingRelationship' -SearchRoot "LDAP://CN=Federation,$([string]$ExchOrg.distinguishedname)" -SearchScope:SubTree -Properties $Props_ExchFeds)
                 Foreach ($ExchFed in $ExchangeFeds) {
                     New-Object -TypeName psobject -Property @{
                         Organization = $ExchOrg.Name
