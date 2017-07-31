@@ -40,7 +40,6 @@ $GetDSDirectoryEntryParameters = Get-CommandParams -CommandName 'Get-DSDirectory
 
 # Use this in your scripts to check if the function is being called from your module or independantly.
 $ThisModuleLoaded = $true
-'Print Operators','Schema Admins' | Get-DSGroup
 <#
 $Mod = New-InMemoryModule -ModuleName Win32
 
