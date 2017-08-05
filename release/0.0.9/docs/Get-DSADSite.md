@@ -4,30 +4,45 @@ online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
-# Get-DSOptionalFeatures
+# Get-DSADSite
 
 ## SYNOPSIS
-Retreives the optional directory features that are configured (such as the recycle bin)
+Retreives the AD site information
 
 ## SYNTAX
 
 ```
-Get-DSOptionalFeatures [[-ComputerName] <String>] [[-Credential] <PSCredential>]
+Get-DSADSite [[-Forest] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
 ```
 
 ## DESCRIPTION
-Retreives the optional directory features that are configured (such as the recycle bin)
+Retreives the AD site information
 
 ## EXAMPLES
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-Get-DSOptionalFeatures
+Get-DSADSite
 ```
 
-Returns the optional features setup for this forest (such as the recycle bin)
+Returns the sites found in the current forest
 
 ## PARAMETERS
+
+### -Forest
+Forest name to retreive site from.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: Name, Identity, ForestName
+
+Required: False
+Position: 1
+Default value: ($Script:CurrentForest).name
+Accept pipeline input: False
+Accept wildcard characters: False
+```
 
 ### -ComputerName
 Domain controller to use for this search.
@@ -38,7 +53,7 @@ Parameter Sets: (All)
 Aliases: Server, ServerName
 
 Required: False
-Position: 1
+Position: 2
 Default value: $Script:CurrentServer
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -53,7 +68,7 @@ Parameter Sets: (All)
 Aliases: Creds
 
 Required: False
-Position: 2
+Position: 3
 Default value: $Script:CurrentCredential
 Accept pipeline input: False
 Accept wildcard characters: False

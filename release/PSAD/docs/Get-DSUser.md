@@ -97,7 +97,8 @@ Accept wildcard characters: False
 ```
 
 ### -LogOnAfter
-Account was logged on after this time
+Account was logged on after this time.
+Filters against lastlogontimestamp so this is only valid for timestamps over 14 days old.
 
 ```yaml
 Type: DateTime
@@ -112,7 +113,8 @@ Accept wildcard characters: False
 ```
 
 ### -LogOnBefore
-Account was logged on before this time
+Account was logged on before this time.
+Filters against lastlogontimestamp so this is only valid for timestamps over 14 days old.
 
 ```yaml
 Type: DateTime

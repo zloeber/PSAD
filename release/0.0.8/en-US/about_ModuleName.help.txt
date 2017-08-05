@@ -1,0 +1,17 @@
+TOPIC
+    about_PSAD
+
+SHORT DESCRIPTION
+    Advanced ADSI PowerShell Module
+
+LONG DESCRIPTION
+    Advanced ADSI PowerShell Module
+
+EXAMPLES
+    TBD
+
+KEYWORDS
+    ADSI,Active Directory
+
+SEE ALSO
+    https://github.com/zloeber/PSAD

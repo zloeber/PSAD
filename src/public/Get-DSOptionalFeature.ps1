@@ -1,4 +1,4 @@
-﻿function Get-DSOptionalFeatures {
+﻿function Get-DSOptionalFeature {
     <#
     .SYNOPSIS
     Retreives the optional directory features that are configured (such as the recycle bin)

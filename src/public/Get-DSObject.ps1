@@ -201,6 +201,9 @@
                                         Write-Verbose "$($FunctionName): Reformatting objectguid"
                                         $Val = [guid]$Val[0]
                                     }
+                                   <# 'msexchmailboxguid' {
+                                        $Val = [System.Text.Encoding]::ASCII.GetString([System.Text.Encoding]::Unicode.GetBytes($Val[0]))
+                                    } #>
                                 { @( 'objectsid', 'sidhistory' ) -contains $_ } {
                                         Write-Verbose "$($FunctionName): Reformatting $Prop"
                                         $Val = New-Object System.Security.Principal.SecurityIdentifier $Val[0], 0

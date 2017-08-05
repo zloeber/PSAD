@@ -49,9 +49,9 @@
     .PARAMETER CreatedBefore
     Computer was created before this time
     .PARAMETER LogOnAfter
-    Account was logged on after this time
+    Account was logged on after this time. Filters against lastlogontimestamp so this is only valid for timestamps over 14 days old.
     .PARAMETER LogOnBefore
-    Account was logged on before this time
+    Account was logged on before this time. Filters against lastlogontimestamp so this is only valid for timestamps over 14 days old.
     .PARAMETER NoPasswordRequired
     Account has no password required set
     .PARAMETER PasswordNeverExpires
