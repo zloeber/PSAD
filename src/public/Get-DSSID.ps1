@@ -37,9 +37,7 @@ Get-DSSID -Name jdoe
 
         [Parameter(Position = 3)]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     $FunctionName = $MyInvocation.MyCommand.Name

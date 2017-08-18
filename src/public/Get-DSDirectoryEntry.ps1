@@ -44,9 +44,7 @@
 
         [Parameter(HelpMessage = 'Credential to use for connection.')]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true, HelpMessage = 'Query LDAP or Global Catalog (GC), default is LDAP')]
         [ValidateSet('LDAP', 'GC')]

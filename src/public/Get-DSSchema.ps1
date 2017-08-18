@@ -30,9 +30,7 @@
 
         [Parameter()]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter()]
         [Alias('Name','Forest')]

@@ -46,9 +46,7 @@
         [Parameter(Position = 2, ParameterSetName='Default')]
         [Parameter(Position = 2, ParameterSetName='MultiProperty')]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(Position = 3, ParameterSetName='MultiProperty')]
         [hashtable]$Properties,

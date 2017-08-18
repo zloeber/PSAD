@@ -2478,9 +2478,7 @@ function Disable-DSObject {
 
         [Parameter(Position = 2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(Position = 3)]
         [Switch]$Force
@@ -2562,9 +2560,7 @@ function Enable-DSObject {
 
         [Parameter(Position = 2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(Position = 3)]
         [Switch]$Force
@@ -2668,9 +2664,7 @@ function Get-DSADSchemaVersion {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -2714,9 +2708,7 @@ function Get-DSADSite {
 
         [Parameter(Position = 2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -2759,9 +2751,7 @@ function Get-DSADSiteSubnet {
 
         [Parameter(Position = 2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -3084,9 +3074,7 @@ function Get-DSDFS {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -3155,9 +3143,7 @@ function Get-DSDFSR {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -3217,9 +3203,7 @@ function Get-DSDirectoryContext {
 
         [Parameter()]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
         [ValidateSet('ApplicationPartition','ConfigurationSet','DirectoryServer','Domain','Forest')]
@@ -3310,9 +3294,7 @@ function Get-DSDirectoryEntry {
 
         [Parameter(HelpMessage = 'Credential to use for connection.')]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true, HelpMessage = 'Query LDAP or Global Catalog (GC), default is LDAP')]
         [ValidateSet('LDAP', 'GC')]
@@ -3406,9 +3388,7 @@ function Get-DSDirectorySearcher {
 
         [Parameter()]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter()]
         [Alias('SizeLimit')]
@@ -3519,9 +3499,7 @@ function Get-DSDomain {
 
         [Parameter( Position=2 )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter( Position=3 )]
         [switch]$UpdateCurrent
@@ -3576,9 +3554,7 @@ function Get-DSExchangeFederation {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -3662,9 +3638,7 @@ function Get-DSExchangeSchemaVersion {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -3709,9 +3683,7 @@ function Get-DSExchangeServer {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -3821,9 +3793,7 @@ function Get-DSForest {
 
         [Parameter( Position=2 )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter()]
         [switch]$UpdateCurrent
@@ -3878,9 +3848,7 @@ function Get-DSForestTrust {
 
         [Parameter(Position=2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Begin {
@@ -3912,9 +3880,7 @@ function Get-DSFRS {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -4206,9 +4172,7 @@ function Get-DSGUIDMap {
 
         [Parameter()]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     $GUIDs = @{'00000000-0000-0000-0000-000000000000' = 'All'}
@@ -4292,9 +4256,7 @@ function Get-DSObject {
 
         [Parameter(HelpMessage='Credentials to connect with.' )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(HelpMessage='Limit results. If zero there is no limit.')]
         [Alias('SizeLimit')]
@@ -4611,9 +4573,7 @@ function Get-DSOCSSchemaVersion {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -4692,9 +4652,7 @@ function Get-DSOCSTopology {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -4790,9 +4748,7 @@ function Get-DSOptionalFeature {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -4898,9 +4854,7 @@ function Get-DSSCCMManagementPoint {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -4964,9 +4918,7 @@ function Get-DSSCCMServiceLocatorPoint {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -5006,9 +4958,7 @@ function Get-DSSchema {
 
         [Parameter()]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter()]
         [Alias('Name','Forest')]
@@ -5073,9 +5023,7 @@ function Get-DSSID {
 
         [Parameter(Position = 3)]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     $FunctionName = $MyInvocation.MyCommand.Name
@@ -5130,9 +5078,7 @@ function Get-DSTombstoneLifetime {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     begin {
@@ -5341,9 +5287,7 @@ function Move-DSObject {
 
         [Parameter(Position = 2)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(Position = 3)]
         [Alias('OU','TargetPath')]
@@ -5431,9 +5375,7 @@ function Set-DSObject {
         [Parameter(Position = 2, ParameterSetName='Default')]
         [Parameter(Position = 2, ParameterSetName='MultiProperty')]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(Position = 3, ParameterSetName='MultiProperty')]
         [hashtable]$Properties,
@@ -5570,14 +5512,12 @@ function Test-DSObjectPath {
 
         [Parameter()]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-        
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
+
         [Parameter(Mandatory=$true)]
         [string]$Path
     )
-    
+
     Begin {
         # Function initialization
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -5586,7 +5526,7 @@ function Test-DSObjectPath {
 
         $ADConnectState = Get-CredentialState -Credential $Credential -ComputerName $ComputerName
     }
-    
+
     Process { }
     end {
         Write-Verbose "$($FunctionName): Validating the following path exists: $Path"
@@ -5597,7 +5537,7 @@ function Test-DSObjectPath {
                 if ($Path.Length -gt 0) {
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -DistinguishedName $Path -Credential $Credential
 
-                } 
+                }
                 else {
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -Credential $Credential
                 }

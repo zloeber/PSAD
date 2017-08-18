@@ -71,9 +71,7 @@
 
         [Parameter(HelpMessage='Credentials to connect with.' )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(HelpMessage='Limit results. If zero there is no limit.')]
         [Alias('SizeLimit')]

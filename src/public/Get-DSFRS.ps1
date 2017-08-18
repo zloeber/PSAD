@@ -25,9 +25,7 @@ function Get-DSFRS {
 
         [Parameter(Position = 1)]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState

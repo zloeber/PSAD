@@ -29,9 +29,7 @@
 
         [Parameter()]
         [Alias('Creds')]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [System.Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ValueFromPipeline = $true)]
         [ValidateSet('ApplicationPartition','ConfigurationSet','DirectoryServer','Domain','Forest')]

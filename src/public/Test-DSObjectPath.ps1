@@ -21,14 +21,12 @@
 
         [Parameter()]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
-        
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
+
         [Parameter(Mandatory=$true)]
         [string]$Path
     )
-    
+
     Begin {
         # Function initialization
         Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
@@ -37,7 +35,7 @@
 
         $ADConnectState = Get-CredentialState -Credential $Credential -ComputerName $ComputerName
     }
-    
+
     Process { }
     end {
         Write-Verbose "$($FunctionName): Validating the following path exists: $Path"
@@ -48,7 +46,7 @@
                 if ($Path.Length -gt 0) {
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -DistinguishedName $Path -Credential $Credential
 
-                } 
+                }
                 else {
                     $domObj = Get-DSDirectoryEntry -ComputerName $ComputerName -Credential $Credential
                 }

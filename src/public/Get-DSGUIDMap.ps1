@@ -30,9 +30,7 @@ http://blogs.technet.com/b/ashleymcglone/archive/2013/03/25/active-directory-ou-
 
         [Parameter()]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     $GUIDs = @{'00000000-0000-0000-0000-000000000000' = 'All'}

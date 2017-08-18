@@ -34,9 +34,7 @@
 
         [Parameter( Position=2 )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]
-        [System.Management.Automation.CredentialAttribute()]
-        $Credential = $Script:CurrentCredential,
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
         [Parameter()]
         [switch]$UpdateCurrent
