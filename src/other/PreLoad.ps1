@@ -49,6 +49,7 @@ $__ad_schema_info=@{}
 
 $IsPS5 = ($PSVersionTable.PSVersion).Major -ge 5
 
+<#
 if ($IsPS5) {
     Write-Verbose "Powershell version 5 detected, using builtin Flags instead of add-type definitions."
     [Flags()] enum userAccountControlFlags {
@@ -115,9 +116,9 @@ if ($IsPS5) {
         TREAT_AS_EXTERNAL  = 40
         USES_RC4_ENCRYPTION = 80
     }
-}
-else {
-    Add-Type -TypeDefinition @"
+}#>
+
+Add-Type -TypeDefinition @"
     [System.Flags]
     public enum userAccountControlFlags {
         SCRIPT = 0x0001,
@@ -146,52 +147,50 @@ else {
 "@
 
 Add-Type -TypeDefinition @"
-        [System.Flags]
-        public enum nTDSSiteConnectionSettingsFlags {
-            IS_GENERATED                  = 0x00000001,
-            TWOWAY_SYNC                   = 0x00000002,
-            OVERRIDE_NOTIFY_DEFAULT       = 0x00000004,
-            USE_NOTIFY                    = 0x00000008,
-            DISABLE_INTERSITE_COMPRESSION = 0x00000010,
-            OPT_USER_OWNED_SCHEDULE       = 0x00000020
-        }
-        [System.Flags]
-        public enum MSExchCurrentServerRolesFlags {
-            NONE           = 0x00000001,
-            MAILBOX        = 0x00000002,
-            CLIENT_ACCESS  = 0x00000004,
-            UM             = 0x00000010,
-            HUB_TRANSPORT  = 0x00000020,
-            EDGE_TRANSPORT = 0x00000040
-        }
-        [System.Flags]
-        public enum nTDSSiteSettingsFlags {
-            IS_AUTO_TOPOLOGY_DISABLED            = 0x00000001,
-            IS_TOPL_CLEANUP_DISABLED             = 0x00000002,
-            IS_TOPL_MIN_HOPS_DISABLED            = 0x00000004,
-            IS_TOPL_DETECT_STALE_DISABLED        = 0x00000008,
-            IS_INTER_SITE_AUTO_TOPOLOGY_DISABLED = 0x00000010,
-            IS_GROUP_CACHING_ENABLED             = 0x00000020,
-            FORCE_KCC_WHISTLER_BEHAVIOR          = 0x00000040,
-            FORCE_KCC_W2K_ELECTION               = 0x00000080,
-            IS_RAND_BH_SELECTION_DISABLED        = 0x00000100,
-            IS_SCHEDULE_HASHING_ENABLED          = 0x00000200,
-            IS_REDUNDANT_SERVER_TOPOLOGY_ENABLED = 0x00000400
-        }
-        [System.Flags]
-        public enum MSTrustAttributeFlags {
-            NON_TRANSITIVE      = 0x00000001,
-            UPLEVEL_ONLY        = 0x00000002,
-            QUARANTINED_DOMAIN  = 0x00000004,
-            FOREST_TRANSITIVE   = 0x00000008,
-            CROSS_ORGANIZATION  = 0x00000010,
-            WITHIN_FOREST       = 0x00000020,
-            TREAT_AS_EXTERNAL   = 0x00000040,
-            USES_RC4_ENCRYPTION = 0x00000080
-        }
+    [System.Flags]
+    public enum nTDSSiteConnectionSettingsFlags {
+        IS_GENERATED                  = 0x00000001,
+        TWOWAY_SYNC                   = 0x00000002,
+        OVERRIDE_NOTIFY_DEFAULT       = 0x00000004,
+        USE_NOTIFY                    = 0x00000008,
+        DISABLE_INTERSITE_COMPRESSION = 0x00000010,
+        OPT_USER_OWNED_SCHEDULE       = 0x00000020
+    }
+    [System.Flags]
+    public enum MSExchCurrentServerRolesFlags {
+        NONE           = 0x00000001,
+        MAILBOX        = 0x00000002,
+        CLIENT_ACCESS  = 0x00000004,
+        UM             = 0x00000010,
+        HUB_TRANSPORT  = 0x00000020,
+        EDGE_TRANSPORT = 0x00000040
+    }
+    [System.Flags]
+    public enum nTDSSiteSettingsFlags {
+        IS_AUTO_TOPOLOGY_DISABLED            = 0x00000001,
+        IS_TOPL_CLEANUP_DISABLED             = 0x00000002,
+        IS_TOPL_MIN_HOPS_DISABLED            = 0x00000004,
+        IS_TOPL_DETECT_STALE_DISABLED        = 0x00000008,
+        IS_INTER_SITE_AUTO_TOPOLOGY_DISABLED = 0x00000010,
+        IS_GROUP_CACHING_ENABLED             = 0x00000020,
+        FORCE_KCC_WHISTLER_BEHAVIOR          = 0x00000040,
+        FORCE_KCC_W2K_ELECTION               = 0x00000080,
+        IS_RAND_BH_SELECTION_DISABLED        = 0x00000100,
+        IS_SCHEDULE_HASHING_ENABLED          = 0x00000200,
+        IS_REDUNDANT_SERVER_TOPOLOGY_ENABLED = 0x00000400
+    }
+    [System.Flags]
+    public enum MSTrustAttributeFlags {
+        NON_TRANSITIVE      = 0x00000001,
+        UPLEVEL_ONLY        = 0x00000002,
+        QUARANTINED_DOMAIN  = 0x00000004,
+        FOREST_TRANSITIVE   = 0x00000008,
+        CROSS_ORGANIZATION  = 0x00000010,
+        WITHIN_FOREST       = 0x00000020,
+        TREAT_AS_EXTERNAL   = 0x00000040,
+        USES_RC4_ENCRYPTION = 0x00000080
+    }
 "@
-
-}
 
 $UACAttribs = @(
     'SCRIPT',
