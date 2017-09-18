@@ -95,10 +95,18 @@
                             $ExchRole = [Enum]::Parse('MSExchCurrentServerRolesFlags', $ExchRole)
                         }
                     }
+                    $ServerVersion = $ExchServer.serialnumber
+                    if ($ExchServer.serialnumber -match '^Version\s(.*)\s\(.*$') {
+                        $ThisServerVersion = $Matches[1]
+                        if ($ExchangeServerVersions.ContainsKey($ThisServerVersion)) {
+                            $ServerVersion = $ExchangeServerVersions.($ThisServerVersion)
+                        }
+                    }
                     New-Object -TypeName PSObject -Property @{
                         Organization = $ExchOrg.Name
                         AdminGroup = $AdminGroup
                         Name = $ExchServer.adminDisplayName
+                        Version = $ServerVersion
                         Role = $ExchRole
                         Site = $ExchSite
                         Created = $ExchServer.whencreated

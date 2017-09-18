@@ -14,10 +14,10 @@ Get AD objects of any kind.
 ```
 Get-DSObject [[-Identity] <String>] [[-ComputerName] <String>] [-Credential <PSCredential>] [-Limit <Int32>]
  [-SearchRoot <String>] [-Filter <String[]>] [-BaseFilter <String>] [-Properties <String[]>]
- [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String>] [-TombStone] [-ChangeLogicOrder]
+ [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String[]>] [-TombStone] [-ChangeLogicOrder]
  [-ModifiedAfter <DateTime>] [-ModifiedBefore <DateTime>] [-CreatedAfter <DateTime>]
  [-CreatedBefore <DateTime>] [-DontJoinAttributeValues] [-IncludeAllProperties] [-IncludeNullProperties]
- [-ExpandUAC] [-Raw] [-ResultsAs <String>]
+ [-ExpandUAC] [-Raw] [-ResultsAs <String>] [-LiteralFilter]
 ```
 
 ## DESCRIPTION
@@ -40,7 +40,7 @@ Accepts distinguishedname, GUID, and samAccountName.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: User, Name, sAMAccountName, distinguishedName
+Aliases: sAMAccountName, distinguishedName
 
 Required: False
 Position: 1
@@ -152,7 +152,7 @@ Aliases:
 
 Required: False
 Position: Named
-Default value: @('Name','ADSPath')
+Default value: @('Name','distinguishedname')
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -191,7 +191,7 @@ Accept wildcard characters: False
 Specifies the available options for examining security information of a directory object.
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases: 
 
@@ -382,6 +382,21 @@ Aliases:
 Required: False
 Position: Named
 Default value: Psobject
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -LiteralFilter
+Escapes special characters in the filter ()/\*\`0
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

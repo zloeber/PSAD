@@ -50,6 +50,8 @@
     Skip attempts to convert known property types but still returns a psobject.
     .PARAMETER ResultsAs
     How the results are returned. psobject (which includes interpretted properties), directoryentry, or searcher. Default is psobject.
+    .PARAMETER LiteralFilter
+    Escapes special characters in the filter ()/\*`0
     .EXAMPLE
     TBD
     .NOTES
@@ -61,8 +63,8 @@
     [CmdletBinding()]
     [OutputType([object],[System.DirectoryServices.DirectoryEntry],[System.DirectoryServices.DirectorySearcher])]
     param(
-        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive. Accepts distinguishedname, GUID, and samAccountName.')]
-        [Alias('User', 'Name', 'sAMAccountName', 'distinguishedName')]
+        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive.')]
+        [Alias('sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
         [Parameter( position = 1, HelpMessage='Domain controller to use for this search.' )]
@@ -87,7 +89,7 @@
         [string]$BaseFilter,
 
         [Parameter(HelpMessage='LDAP properties to return')]
-        [string[]]$Properties = @('Name','ADSPath'),
+        [string[]]$Properties = @('Name','distinguishedname'),
 
         [Parameter(HelpMessage='Page size for larger results.')]
         [int]$PageSize = $Script:PageSize,
@@ -98,7 +100,7 @@
 
         [Parameter(HelpMessage='Security mask for search.')]
         [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
+        [string[]]$SecurityMask = 'None',
 
         [Parameter(HelpMessage='Include tombstone objects.')]
         [switch]$TombStone,
@@ -135,7 +137,10 @@
 
         [Parameter(HelpMessage='How you want the results to be returned.')]
         [ValidateSet('psobject', 'directoryentry', 'searcher')]
-        [string]$ResultsAs = 'psobject'
+        [string]$ResultsAs = 'psobject',
+
+        [Parameter(HelpMessage='Escapes special characters in the filter ()/\*`0')]
+        [switch]$LiteralFilter
     )
 
     Begin {
@@ -167,7 +172,8 @@
             -CreatedAfter $CreatedAfter `
             -CreatedBefore $CreatedBefore `
             -IncludeAllProperties $IncludeAllProperties `
-            -IncludeNullProperties $IncludeNullProperties
+            -IncludeNullProperties $IncludeNullProperties `
+            -LiteralFilter $LiteralFilter
 
         # Store for later reference
         try {
@@ -192,6 +198,7 @@
                     $_.Properties.GetEnumerator() | Foreach-Object {
                         $Val = @($_.Value)
                         $Prop = $_.Name
+                        Write-Verbose "$($FunctionName): Property/Value set: $Prop = $Val"
                         if ($Prop -ne $null) {
                             if (-not $Raw) {
                                 switch ($Prop) {

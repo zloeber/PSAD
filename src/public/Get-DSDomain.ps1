@@ -9,7 +9,7 @@
     .PARAMETER Credential
     Alternate credentials for retrieving domain information.
     .PARAMETER Identity
-    Forest name to retreive.
+    Domain name to retreive.
     .PARAMETER UpdateCurrent
     Updates the module stored currently connected forest object
     .EXAMPLE
@@ -28,21 +28,23 @@
         [Alias('Name','Domain','DomainName')]
         [string]$Identity = ($Script:CurrentDomain).name,
 
-        [Parameter( Position=1 )]
+        [Parameter( Position = 1 )]
         [Alias('Server','ServerName')]
         [string]$ComputerName = $Script:CurrentServer,
 
-        [Parameter( Position=2 )]
+        [Parameter( Position = 2 )]
         [alias('Creds')]
         [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
-        [Parameter( Position=3 )]
+        [Parameter( Position = 3 )]
         [switch]$UpdateCurrent
     )
 
     Begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:IsLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
     }

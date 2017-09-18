@@ -51,6 +51,8 @@ function Get-CommonSearcherParams {
     Expands the UAC attribute into readable format.
     .PARAMETER Raw
     Skip attempts to convert known property types.
+    .PARAMETER LiteralFilter
+    Escapes special characters in the filter ()/\*`0
     .EXAMPLE
     NA
     .NOTES
@@ -98,7 +100,7 @@ function Get-CommonSearcherParams {
 
         [Parameter()]
         [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
+        [string[]]$SecurityMask = 'None',
 
         [Parameter()]
         [bool]$TombStone,
@@ -122,7 +124,10 @@ function Get-CommonSearcherParams {
         $CreatedAfter,
 
         [Parameter()]
-        $CreatedBefore
+        $CreatedBefore,
+
+        [Parameter()]
+        [bool]$LiteralFilter
     )
 
     # Function initialization
@@ -170,7 +175,8 @@ function Get-CommonSearcherParams {
 
     if (-not [string]::IsNullOrEmpty($Identity)) {
         Write-Verbose "$($FunctionName): Identity was passed ($Identity), creating filter"
-        $LDAPFilters += Get-CommonIDLDAPFilter -Identity $Identity -Filter $Filter
+
+        $LDAPFilters += Get-CommonIDLDAPFilter -Identity $Identity -Filter $Filter -LiteralFilter $LiteralFilter
     }
 
     $LDAPFilters += $BaseFilter

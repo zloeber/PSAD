@@ -7,17 +7,22 @@ schema: 2.0.0
 # Move-DSObject
 
 ## SYNOPSIS
-Move AD objects to another OU.
+Moves AD objects to a destination OU.
 
 ## SYNTAX
 
 ```
-Move-DSObject [-Identity <String[]>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
- [[-Destination] <String>] [-Force] [-WhatIf] [-Confirm]
+Move-DSObject [-Destination <String>] [-Force] [-Identity <String>] [-ComputerName <String>]
+ [-Credential <PSCredential>] [-Limit <Int32>] [-SearchRoot <String>] [-Filter <String[]>]
+ [-BaseFilter <String>] [-Properties <String[]>] [-PageSize <Int32>] [-SearchScope <String>]
+ [-SecurityMask <String[]>] [-TombStone] [-ChangeLogicOrder] [-ModifiedAfter <DateTime>]
+ [-ModifiedBefore <DateTime>] [-CreatedAfter <DateTime>] [-CreatedBefore <DateTime>] [-DontJoinAttributeValues]
+ [-IncludeAllProperties] [-IncludeNullProperties] [-ExpandUAC] [-Raw] [-ResultsAs <String>] [-LiteralFilter]
 ```
 
 ## DESCRIPTION
-Move AD objects to another OU.
+Moves AD objects to a destination OU.
+This will move ANY object that is able to be found with the filter you use so be careful when using this command.
 
 ## EXAMPLES
 
@@ -28,52 +33,6 @@ TBD
 
 ## PARAMETERS
 
-### -Identity
-Object to move.
-Accepts DN, GUID, and name formats.
-
-```yaml
-Type: String[]
-Parameter Sets: (All)
-Aliases: Name
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: False
-```
-
-### -ComputerName
-Domain controller to use for this move.
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: Server, ServerName
-
-Required: False
-Position: 2
-Default value: $Script:CurrentServer
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -Credential
-Credentials to use for connection to AD.
-
-```yaml
-Type: PSCredential
-Parameter Sets: (All)
-Aliases: Creds
-
-Required: False
-Position: 3
-Default value: $Script:CurrentCredential
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
 ### -Destination
 Desination OU to move objects into.
 
@@ -83,7 +42,7 @@ Parameter Sets: (All)
 Aliases: OU, TargetPath
 
 Required: False
-Position: 4
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -98,20 +57,19 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 5
+Position: Named
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -WhatIf
-Shows what would happen if the cmdlet runs.
-The cmdlet is not run.
+### -BaseFilter
+Immutable base ldap filter to use.
 
 ```yaml
-Type: SwitchParameter
+Type: String
 Parameter Sets: (All)
-Aliases: wi
+Aliases: 
 
 Required: False
 Position: Named
@@ -120,13 +78,344 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Confirm
-Prompts you for confirmation before running the cmdlet.
+### -ChangeLogicOrder
+Use logical OR instead of AND for custom LDAP filters.
 
 ```yaml
 Type: SwitchParameter
 Parameter Sets: (All)
-Aliases: cf
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ComputerName
+Domain controller to use for this search.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: Server, ServerName
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -CreatedAfter
+Only include objects created after this date.
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -CreatedBefore
+Only include objects created before this date.
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Credential
+Credentials to connect with.
+
+```yaml
+Type: PSCredential
+Parameter Sets: (All)
+Aliases: Creds
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -DontJoinAttributeValues
+Do not joine attribute values in output.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ExpandUAC
+Expand useraccountcontroll property (if it exists).
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Filter
+LDAP filters to use.
+
+```yaml
+Type: String[]
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Identity
+Object to retreive.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: sAMAccountName, distinguishedName
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: True (ByPropertyName, ByValue)
+Accept wildcard characters: False
+```
+
+### -IncludeAllProperties
+Include all properties that have a value
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -IncludeNullProperties
+Include null property values
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Limit
+Limit results.
+If zero there is no limit.
+
+```yaml
+Type: Int32
+Parameter Sets: (All)
+Aliases: SizeLimit
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -LiteralFilter
+Escapes special characters in the filter ()/\*\`0
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ModifiedAfter
+Only include objects modified after this date.
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ModifiedBefore
+Only include objects modified before this date.
+
+```yaml
+Type: DateTime
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -PageSize
+Page size for larger results.
+
+```yaml
+Type: Int32
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Properties
+LDAP properties to return
+
+```yaml
+Type: String[]
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Raw
+Do no property transformations in output.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -ResultsAs
+How you want the results to be returned.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -SearchRoot
+Root path to search.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -SearchScope
+Type of search.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -SecurityMask
+Security mask for search.
+
+```yaml
+Type: String[]
+Parameter Sets: (All)
+Aliases: 
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -TombStone
+Include tombstone objects.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
 
 Required: False
 Position: Named
@@ -140,7 +429,7 @@ Accept wildcard characters: False
 ## OUTPUTS
 
 ## NOTES
-Author: Zachary Loeber
+NA
 
 ## RELATED LINKS
 

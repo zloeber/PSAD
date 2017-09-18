@@ -381,6 +381,20 @@ $SchemaVersionTable = @{
     '5.00.7958.1000'='SCCM 2012 R2'
 }
 
+$ExchangeServerVersions = @{
+    '6.5' = '2003 RTM/SP1/SP2'
+    '8.0' = '2007'
+    '8.1' = '2007 SP1'
+    '8.2' = '2007 SP2'
+    '8.3' = '2007 SP3'
+    '14.0' = '2010 RTM'
+    '14.1' = '2010 SP1'
+    '14.2' = '2010 SP2'
+    '14.3' = '2010 SP3'
+    '15.0' = '2013'
+    '15.1' = '2016'
+}
+
 # AD DC capabilities list (http://www.ldapexplorer.com/en/manual/103010700-connection-rootdse.htm)
 # - Primarily used to determine if a DC is RODC or not (Const LDAP_CAP_ACTIVE_DIRECTORY_PARTIAL_SECRETS_OID = "1.2.840.113556.1.4.1920")
 $AD_Capabilities = @{
@@ -444,3 +458,5 @@ $ForestFunctionalLevel = @{
     '5' = 'Windows Server 2012'
     '6' = 'Windows Server 2012 R2'
 }
+
+$GuidMap = @{}

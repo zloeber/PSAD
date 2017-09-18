@@ -1,0 +1,96 @@
+SID,Name,Description
+S-1-0-0,NULL,No Security principal.
+S-1-1-0,EVERYONE,A group that includes all users.
+S-1-2-0,LOCAL,A group that includes all users who have logged on locally.
+S-1-2-1,CONSOLE_LOGON,A group that includes users who are logged on to the physical console. This SID can be used to implement security policies that grant different rights based on whether a user has been granted physical access to the console.<5>
+S-1-3-0,CREATOR_OWNER,"A placeholder in an inheritable access control entry (ACE). When the ACE is inherited, the system replaces this SID with the SID for the object's creator."
+S-1-3-1,CREATOR_GROUP,"A placeholder in an inheritable ACE. When the ACE is inherited, the system replaces this SID with the SID for the primary group of the object's creator."
+S-1-3-2,OWNER_SERVER,"A placeholder in an inheritable ACE. When the ACE is inherited, the system replaces this SID with the SID for the object's owner server.<6>"
+S-1-3-3,GROUP_SERVER,"A placeholder in an inheritable ACE. When the ACE is inherited, the system replaces this SID with the SID for the object's group server.<7>"
+S-1-3-4,OWNER_RIGHTS,"A group that represents the current owner of the object. When an ACE that carries this SID is applied to an object, the system ignores the implicit READ_CONTROL and WRITE_DAC permissions for the object owner."
+S-1-5,NT_AUTHORITY,A SID containing only the SECURITY_NT_AUTHORITY identifier authority.
+S-1-5-1,DIALUP,A group that includes all users who have logged on through a dial-up connection.
+S-1-5-2,NETWORK,A group that includes all users who have logged on through a network connection.
+S-1-5-3,BATCH,A group that includes all users who have logged on through a batch queue facility.
+S-1-5-4,INTERACTIVE,A group that includes all users who have logged on interactively.
+S-1-5-6,SERVICE,A group that includes all security principals that have logged on as a service.
+,,
+S-1-5-7,ANONYMOUS,A group that represents an anonymous logon.
+S-1-5-8,PROXY,Identifies a SECURITY_NT_AUTHORITY Proxy.
+S-1-5-9,ENTERPRISE_DOMAIN_CONTROLLERS,A group that includes all domain controllers in a forest that uses an Active Directory directory service.
+S-1-5-10,PRINCIPAL_SELF,"A placeholder in an inheritable ACE on an account object or group object in Active Directory. When the ACE is inherited, the system replaces this SID with the SID for the security principal that holds the account."
+S-1-5-11,AUTHENTICATED_USERS,A group that includes all users whose identities were authenticated when they logged on.
+S-1-5-12,RESTRICTED_CODE,"This SID is used to control access by untrusted code. ACL validation against tokens with RC consists of two checks, one against the token's normal list of SIDs and one against a second list (typically containing RC - the ""RESTRICTED_CODE"" token - and a subset of the original token SIDs). Access is granted only if a token passes both tests. Any ACL that specifies RC must also specify WD - the ""EVERYONE"" token. When RC is paired with WD in an ACL, a superset of ""EVERYONE"", including untrusted code, is described."
+S-1-5-13,TERMINAL_SERVER_USER,A group that includes all users who have logged on to a Terminal Services server.
+S-1-5-14,REMOTE_INTERACTIVE_LOGON,A group that includes all users who have logged on through a terminal services logon.
+S-1-5-15,THIS_ORGANIZATION,"A group that includes all users from the same organization. If this SID is present, the OTHER_ORGANIZATION SID MUST NOT be present.<9>"
+S-1-5-17,IUSR,An account that is used by the default Internet Information Services (IIS) user.
+S-1-5-18,LOCAL_SYSTEM,An account that is used by the operating system.
+S-1-5-19,LOCAL_SERVICE,A local service account.
+S-1-5-20,NETWORK_SERVICE,A network service account.
+S-1-5-21-0-0-0-496,COMPOUNDED_AUTHENTICATION,"Device identity is included in the Kerberos service ticket. If a forest boundary was crossed, then claims transformation occurred."
+S-1-5-21-0-0-0-497,CLAIMS_VALID,"Claims were queried for in the account's domain, and if a forest boundary was crossed, then claims transformation occurred."
+S-1-5-32-544,BUILTIN_ADMINISTRATORS,"A built-in group. After the initial installation of the operating system, the only member of the group is the Administrator account. When a computer joins a domain, the Domain Administrators group is added to the Administrators group. When a server becomes a domain controller, the Enterprise Administrators group also is added to the Administrators group."
+S-1-5-32-545,BUILTIN_USERS,"A built-in group. After the initial installation of the operating system, the only member is the Authenticated Users group. When a computer joins a domain, the Domain Users group is added to the Users group on the computer."
+S-1-5-32-546,BUILTIN_GUESTS,A built-in group. The Guests group allows users to log on with limited privileges to a computer's built-in Guest account.
+S-1-5-32-547,POWER_USERS,"A built-in group. Power users can perform the following actions:
+- Create local users and groups.
+- Modify and delete accounts that they have created.
+- Remove users from the Power Users, Users, and Guests groups.
+- Install programs.
+- Create, manage, and delete local printers.
+- Create and delete file shares."
+S-1-5-32-548,ACCOUNT_OPERATORS,"A built-in group that exists only on domain controllers. Account Operators have permission to create, modify, and delete accounts for users, groups, and computers in all containers and organizational units of Active Directory except the Built-in container and the Domain Controllers OU. Account Operators do not have permission to modify the Administrators and Domain Administrators groups, nor do they have permission to modify the accounts for members of those groups."
+S-1-5-32-549,SERVER_OPERATORS,"A built-in group that exists only on domain controllers. Server Operators can perform the following actions:
+- Log on to a server interactively.
+- Create and delete network shares.
+- Start and stop services.
+- Back up and restore files.
+- Format the hard disk of a computer.
+- Shut down the computer."
+S-1-5-32-550,PRINTER_OPERATORS,A built-in group that exists only on domain controllers. Print Operators can manage printers and document queues.
+S-1-5-32-551,BACKUP_OPERATORS,"A built-in group. Backup Operators can back up and restore all files on a computer, regardless of the permissions that protect those files."
+S-1-5-32-552,REPLICATOR,A built-in group that is used by the File Replication Service (FRS) on domain controllers.
+S-1-5-32-554,ALIAS_PREW2KCOMPACC,A backward compatibility group that allows read access on all users and groups in the domain.
+S-1-5-32-555,REMOTE_DESKTOP,An alias. Members of this group are granted the right to log on remotely.
+S-1-5-32-556,NETWORK_CONFIGURATION_OPS,An alias. Members of this group can have some administrative privileges to manage configuration of networking features.
+S-1-5-32-557,INCOMING_FOREST_TRUST_BUILDERS,"An alias. Members of this group can create incoming, one-way trusts to this forest."
+S-1-5-32-558,PERFMON_USERS,An alias. Members of this group have remote access to monitor this computer.
+S-1-5-32-559,PERFLOG_USERS,An alias. Members of this group have remote access to schedule the logging of performance counters on this computer.
+S-1-5-32-560,WINDOWS_AUTHORIZATION_ACCESS_GROUP,An alias. Members of this group have access to the computed tokenGroupsGlobalAndUniversal attribute on User objects.
+S-1-5-32-561,TERMINAL_SERVER_LICENSE_SERVERS,An alias. A group for Terminal Server License Servers.
+S-1-5-32-562,DISTRIBUTED_COM_USERS,"An alias. A group for COM to provide computer-wide access controls that govern access to all call, activation, or launch requests on the computer."
+S-1-5-32-568,IIS_IUSRS,A built-in group account for IIS users.
+S-1-5-32-569,CRYPTOGRAPHIC_OPERATORS,A built-in group account for cryptographic operators.<22>
+S-1-5-32-573,EVENT_LOG_READERS,A built-in local group.  Members of this group can read event logs from the local machine.
+S-1-5-32-574,CERTIFICATE_SERVICE_DCOM_ACCESS,A built-in local group. Members of this group are allowed to connect to Certification Authorities in the enterprise.
+S-1-5-32-575,RDS_REMOTE_ACCESS_SERVERS,Servers in this group enable users of RemoteApp programs and personal virtual desktops access to these resources. This group needs to be populated on servers running RD Connection Broker. RD Gateway servers and RD Web Access servers used in the deployment need to be in this group.
+S-1-5-32-576,RDS_ENDPOINT_SERVERS,A group that enables member servers to run virtual machines and host sessions.
+S-1-5-32-577,RDS_MANAGEMENT_SERVERS,A group that allows members to access WMI resources over management protocols (such as WS-Management via the Windows Remote Management service).
+S-1-5-32-578,HYPER_V_ADMINS,A group that gives members access to all administrative features of Hyper-V.
+S-1-5-32-579,ACCESS_CONTROL_ASSISTANCE_OPS,A local group that allows members to remotely query authorization attributes and permissions for resources on the local computer.
+S-1-5-32-580,REMOTE_MANAGEMENT_USERS,Members of this group can access Windows Management Instrumentation (WMI) resources over management protocols (such as WS-Management [DMTF-DSP0226]). This applies only to WMI namespaces that grant access to the user.
+S-1-5-33,WRITE_RESTRICTED_CODE,A SID that allows objects to have an ACL that lets any service process with a write-restricted token to write to the object.
+S-1-5-64-10,NTLM_AUTHENTICATION,A SID that is used when the NTLM authentication package authenticated the client.
+S-1-5-64-14,SCHANNEL_AUTHENTICATION,A SID that is used when the SChannel authentication package authenticated the client.
+S-1-5-64-21,DIGEST_AUTHENTICATION,A SID that is used when the Digest authentication package authenticated the client.
+S-1-5-65-1,THIS_ORGANIZATION_CERTIFICATE,"A SID that indicates that the client's Kerberos service ticket's PAC contained a NTLM_SUPPLEMENTAL_CREDENTIAL structure (as specified in [MS-PAC] section 2.6.4). If the OTHER_ORGANIZATION SID is present, then this SID MUST NOT be present. <25>"
+S-1-5-80,NT_SERVICE,An NT Service account prefix.
+S-1-5-84-0-0-0-0-0,USER_MODE_DRIVERS,Identifies a user-mode driver process.
+S-1-5-113,LOCAL_ACCOUNT,A group that includes all users who are local accounts.
+S-1-5-114,LOCAL_ACCOUNT_AND_MEMBER_OF_ADMINISTRATORS_GROUP,A group that includes all users who are local accounts and members of the administrators group.
+S-1-5-1000,OTHER_ORGANIZATION,"A group that includes all users and computers from another organization. If this SID is present, THIS_ORGANIZATION SID MUST NOT be present.<28>"
+S-1-15-2-1,ALL_APP_PACKAGES,All applications running in an app package context.
+S-1-16-0,ML_UNTRUSTED,An untrusted integrity level.
+S-1-16-4096,ML_LOW,A low integrity level.
+S-1-16-8192,ML_MEDIUM,A medium integrity level.
+S-1-16-8448,ML_MEDIUM_PLUS,A medium-plus integrity level.
+S-1-16-12288,ML_HIGH,A high integrity level.
+S-1-16-16384,ML_SYSTEM,A system integrity level.
+S-1-16-20480,ML_PROTECTED_PROCESS,A protected-process integrity level.
+S-1-18-1,AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY,A SID that means the client's identity is asserted by an authentication authority based on proof of possession of client credentials.
+S-1-18-2,SERVICE_ASSERTED_IDENTITY,A SID that means the client's identity is asserted by a service.
+S-1-18-3,FRESH_PUBLIC_KEY_IDENTITY,A SID that means the client's identity is asserted by an authentication authority based on proof of current possession of client public key credentials.<33>
+S-1-18-4,KEY_TRUST_IDENTITY,A SID that means the client's identity is based on proof of possession of public key credentials using the key trust object.
+S-1-18-5,KEY_PROPERTY_MFA,A SID that means the key trust object had the multifactor authentication (MFA) property.
+S-1-18-6,KEY_PROPERTY_ATTESTATION,A SID that means the key trust object had the attestation property.

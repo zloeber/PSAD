@@ -1,0 +1,112 @@
+function Add-DSGroupMember {
+    <#
+    .SYNOPSIS
+    Adds AD objects to a specified group.
+    .DESCRIPTION
+    Adds AD objects to a specified group.
+    .PARAMETER Group
+    Group name to add accounts as a member of.
+    .PARAMETER Force
+    Force add to group membership without confirmation.
+    .EXAMPLE
+    PS> get-dsuser jdoe | Add-DSGroupMember -Group 'Sales Team' -force
+
+    Adds jdoe to the 'Sales Team' group without prompting for confirmation.
+    .NOTES
+    It is best to pipe users in via get-dsuser or get-dscomputer where possible.
+    This function is missing -Whatif implementation at this time.
+    .LINK
+    https://github.com/zloeber/PSAD
+    #>
+    [CmdletBinding(PositionalBinding=$false)]
+    param(
+        [Parameter()]
+        [Alias('GroupName')]
+        [string]$Group,
+
+        [Parameter(HelpMessage = 'Force add group membership.')]
+        [Switch]$Force
+    )
+
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
+    begin {
+        # Function initialization
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+        $FunctionName = $MyInvocation.MyCommand.Name
+        Write-Verbose "$($FunctionName): Begin."
+
+        $Identities = @()
+        $YesToAll = $false
+        $NoToAll = $false
+    }
+
+    process {
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+        }
+
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
+        }
+        $GetObjectParams.BaseFilter = $BaseFilter
+
+        $Identities += $Identity
+    }
+    end {
+        $SearcherParams = @{
+            ComputerName = $ComputerName
+            Credential = $Credential
+            ResultsAs = 'DirectoryEntry'
+            Identity = $Group
+        }
+
+        try {
+            # Otherwise get a DE of the group for later
+            Write-Verbose "$($FunctionName): Retreiving directory entry of the group - $Group"
+            $GroupDE = @(Get-DSGroup @SearcherParams)
+        }
+        catch {
+            throw "Unable to get a directory entry for the specified group of $Group"
+        }
+
+        if ($GroupDE.Count -gt 1) {
+            throw "More than one group result was found for $Group, exiting!"
+        }
+        else {
+            $GroupDE = $GroupDE[0]
+        }
+
+        $GetObjectParams.Properties = 'adspath','name'
+
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams | ForEach-Object {
+                $Name = $_.name
+                Write-Verbose "$($FunctionName): Proccessing found object name: $Name"
+                if ($pscmdlet.ShouldProcess("Add $Name to $Group", "Add $Name from $Group?","Adding $Name from $Group")) {
+                    if ($Force -Or $PSCmdlet.ShouldContinue("Are you REALLY sure you want to add '$Name' to '$Group'?", "Adding $Name from $Group", [ref]$YesToAll, [ref]$NotoAll)) {
+                        try {
+                            $GroupDE.Add($_.adspath)
+                        }
+                        catch {
+                            $ThisError = $_
+                            Write-Warning "$($FunctionName): Unable to add $Name to $Group"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

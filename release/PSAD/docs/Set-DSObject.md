@@ -24,7 +24,8 @@ Set-DSObject [-Identity <String>] [[-ComputerName] <String>] [[-Credential] <PSC
 ```
 
 ## DESCRIPTION
-Sets properties of an AD object
+Sets properties of an AD object.
+You can set a single property or pass in a hashtable of property/value pairs to be updated.
 
 ## EXAMPLES
 
@@ -47,7 +48,7 @@ Accepts DN, GUID, and name formats.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Name
+Aliases: Name, distinguishedname
 
 Required: False
 Position: Named

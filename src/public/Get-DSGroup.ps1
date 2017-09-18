@@ -34,7 +34,6 @@
 
         [Parameter()]
         [switch]$Empty
-
     )
 
     DynamicParam {

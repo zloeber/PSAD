@@ -3,7 +3,7 @@
     .SYNOPSIS
     Sets properties of an AD object
     .DESCRIPTION
-    Sets properties of an AD object
+    Sets properties of an AD object. You can set a single property or pass in a hashtable of property/value pairs to be updated.
     .PARAMETER Identity
     Object to update. Accepts DN, GUID, and name formats.
     .PARAMETER ComputerName
@@ -35,7 +35,7 @@
         [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, ParameterSetName='MultiProperty')]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
-        [Alias('Name')]
+        [Alias('Name','distinguishedname')]
         [string]$Identity,
 
         [Parameter(Position = 1, ParameterSetName='Default')]
@@ -63,7 +63,11 @@
     )
 
     begin {
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        # Function initialization
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 

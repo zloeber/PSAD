@@ -21,7 +21,7 @@ Get-DSSID -Name jdoe
     [CmdletBinding(DefaultParameterSetName = 'Object')]
     param(
         [Parameter(Position = 0, Mandatory=$True, ValueFromPipeline=$True, ParameterSetName='Object')]
-        [Alias('Group','User')]
+        [Alias('Group','User', 'Identity')]
         [String]$Name,
 
         [Parameter(Position = 0, Mandatory=$True, ValueFromPipeline=$True, ParameterSetName='SID')]

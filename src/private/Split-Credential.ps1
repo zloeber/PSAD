@@ -10,7 +10,7 @@
     The credential to enumerate.
 
     .EXAMPLE
-    PS C:\> Get-Credential $null
+    PS C:\> Split-Credential $null
     Returns the current user settings. Password will be returned as $null.
 
     .NOTES
@@ -22,9 +22,12 @@
     [CmdletBinding()]
     param (
         [parameter()]
-        [alias('Creds')]
+        [alias('Cred','Creds')]
         [System.Management.Automation.PSCredential]$Credential
     )
+    if ($Script:ThisModuleLoaded) {
+        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    }
     $FunctionName = $MyInvocation.MyCommand.Name
     Write-Verbose "$($FunctionName): Begin."
 
@@ -34,7 +37,6 @@
         Domain = $null
         AltUser = $true
     }
-
 
     if ($Credential -eq $null) {
         if ((Get-DomainJoinStatus) -eq 'Domain') {

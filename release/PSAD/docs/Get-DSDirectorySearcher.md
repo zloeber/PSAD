@@ -14,7 +14,7 @@ Get a diresctory searcher object fro a given domain.
 ```
 Get-DSDirectorySearcher [[-ComputerName] <String>] [[-Credential] <PSCredential>] [[-Limit] <Int32>]
  [[-SearchRoot] <String>] [[-Filter] <String>] [[-Properties] <String[]>] [[-PageSize] <Int32>]
- [[-SearchScope] <String>] [[-SecurityMask] <String>] [-TombStone]
+ [[-SearchScope] <String>] [[-SecurityMask] <String[]>] [-TombStone]
 ```
 
 ## DESCRIPTION
@@ -156,7 +156,7 @@ Accept wildcard characters: False
 Specifies the available options for examining security information of a directory object.
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases: 
 

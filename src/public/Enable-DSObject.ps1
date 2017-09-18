@@ -23,7 +23,7 @@
     param(
         [Parameter(Position = 0, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
         [ValidateNotNullOrEmpty()]
-        [Alias('Name')]
+        [Alias('sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
         [Parameter(Position = 1)]

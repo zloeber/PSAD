@@ -63,12 +63,12 @@ Path to validate.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: 
+Aliases: adsPath
 
 Required: True
 Position: 3
 Default value: None
-Accept pipeline input: False
+Accept pipeline input: True (ByPropertyName, ByValue)
 Accept wildcard characters: False
 ```
 

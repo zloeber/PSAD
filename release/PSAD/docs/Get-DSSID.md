@@ -39,7 +39,7 @@ The user/group name to convert, can be 'user' or 'DOMAIN\user' format.
 ```yaml
 Type: String
 Parameter Sets: Object
-Aliases: Group, User
+Aliases: Group, User, Identity
 
 Required: True
 Position: 1

@@ -35,7 +35,7 @@ Accepts distinguishedname, GUID, and samAccountName.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Name
+Aliases: sAMAccountName, distinguishedName
 
 Required: False
 Position: 1

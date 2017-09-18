@@ -1,53 +1,11 @@
 function Get-DSWhatever {
     <#
     .SYNOPSIS
-    Get computer objects in a given directory service.
+    Example function that will get some specific type of AD object based on some base filter.
     .DESCRIPTION
-    Get computer objects in a given directory service. This is just a fancy wrapper for get-dsobject.
-    .PARAMETER Identity
-    Computer name to search for.
-    .PARAMETER ComputerName
-    Domain controller to use for this search.
-    .PARAMETER Credential
-    Credentials to use for connection to AD.
-    .PARAMETER BaseFilter
-    Unused
-    .PARAMETER Limit
-    Limits items retrieved. If set to 0 then there is no limit.
-    .PARAMETER PageSize
-    Items returned per page.
-    .PARAMETER SearchRoot
-    Root of search.
-    .PARAMETER Filter
-    LDAP filter for searches.
-    .PARAMETER ChangeLogicOrder
-    Use logical OR instead of AND in LDAP filtering
-    .PARAMETER Properties
-    Properties to include in output.
-    .PARAMETER SearchScope
-    Scope of a search as either a base, one-level, or subtree search, default is subtree.
-    .PARAMETER SecurityMask
-    Specifies the available options for examining security information of a directory object.
-    .PARAMETER TombStone
-    Whether the search should also return deleted objects that match the search filter.
-    .PARAMETER Raw
-    Skip attempts to convert known property types.
-    .PARAMETER DontJoinAttributeValues
-    Output will automatically join the attributes unless this switch is set.
-    .PARAMETER IncludeAllProperties
-    Include all properties for an object.
-    .PARAMETER IncludeNullProperties
-    Include unset (null) properties as defined in the schema (with or without values). This overrides the Properties parameter and can be extremely verbose.
-    .PARAMETER TrustedForDelegation
-    Computer is trusted for delegation
-    .PARAMETER ModifiedAfter
-    Computer was modified after this time
-    .PARAMETER ModifiedBefore
-    Computer was modified before this time
-    .PARAMETER CreatedAfter
-    Computer was created after this time
-    .PARAMETER CreatedBefore
-    Computer was created before this time
+    TBD
+    .PARAMETER AdminCount
+    AdminCount property is set. (example additional filter)
     .EXAMPLE
     TBD
     .NOTES

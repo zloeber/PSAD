@@ -45,12 +45,12 @@ and import the module to your session to test, but not install this module.
 
 ## Versions
 
-0.0.1 - Initial Release
-0.0.2 - Some minor updates
-0.0.3 - Lots of fixes.
-0.0.4 - ???
-0.0.5 - Updated the module to properly handle null attributes and included more documentation
-0.0.11 - Fixed PowerShell 4 related issues with the credential parameters for most functions.
+- 0.0.1 - Initial Release
+- 0.0.2 - Some minor updates
+- 0.0.3 - Lots of fixes.
+- 0.0.4 - ???
+- 0.0.5 - Updated the module to properly handle null attributes and included more documentation
+- 0.0.11 - Fixed PowerShell 4 related issues with the credential parameters for most functions.
 
 ## Contribute
 
@@ -64,8 +64,6 @@ Studio Code and ensure that the PowerShell extension is installed.
 For more information on contributing go to [this link](docs/Contributing.md)
 
 # PSAD Acknowledgements
-
-Project Site: [https://github.com/zloeber/PSAD](https://github.com/zloeber/PSAD)
 
 I know I'm largely creating stuff that has been done before (in many ways even more comprehensive or better than I have done here). These projects are the inspiration, and sometimes even the source code for much of this work.
 

@@ -67,7 +67,7 @@
 
         [Parameter()]
         [ValidateSet('None', 'Dacl', 'Group', 'Owner', 'Sacl')]
-        [string]$SecurityMask = 'None',
+        [string[]]$SecurityMask = 'None',
 
         [Parameter()]
         [switch]$TombStone

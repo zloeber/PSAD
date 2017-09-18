@@ -1,15 +1,9 @@
-﻿function Move-DSObject {
+function Move-DSObject {
     <#
     .SYNOPSIS
-    Move AD objects to another OU.
+    Moves AD objects to a destination OU.
     .DESCRIPTION
-    Move AD objects to another OU.
-    .PARAMETER Identity
-    Object to move. Accepts DN, GUID, and name formats.
-    .PARAMETER ComputerName
-    Domain controller to use for this move.
-    .PARAMETER Credential
-    Credentials to use for connection to AD.
+    Moves AD objects to a destination OU. This will move ANY object that is able to be found with the filter you use so be careful when using this command.
     .PARAMETER Destination
     Desination OU to move objects into.
     .PARAMETER Force
@@ -17,40 +11,54 @@
     .EXAMPLE
     TBD
     .NOTES
-    Author: Zachary Loeber
+    NA
     .LINK
     https://github.com/zloeber/PSAD
     #>
-    [CmdletBinding( SupportsShouldProcess=$True, ConfirmImpact='Medium' )]
+    [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-        [Alias('Name')]
-        [string[]]$Identity,
-
-        [Parameter(Position = 1)]
-        [Alias('Server','ServerName')]
-        [string]$ComputerName = $Script:CurrentServer,
-
-        [Parameter(Position = 2)]
-        [alias('Creds')]
-        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
-
-        [Parameter(Position = 3)]
+        [Parameter()]
         [Alias('OU','TargetPath')]
         [string]$Destination,
 
-        [Parameter(Position = 4, HelpMessage = 'Force move to OU without confirmation.')]
+        [Parameter(HelpMessage = 'Force move to OU without confirmation.')]
         [Switch]$Force
     )
 
-    Begin {
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
+    begin {
         # Function initialization
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
         $Identities = @()
+        $YesToAll = $false
+        $NoToAll = $false
+    }
 
+    process {
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+        }
+
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
+        }
+        $GetObjectParams.BaseFilter = $BaseFilter
+
+        $Identities += $Identity
+    }
+    end {
         $SearcherParams = @{
             ComputerName = $ComputerName
             Credential = $Credential
@@ -58,36 +66,32 @@
 
         # If the destination OU doesn't exist then there is nothing for us to do...
         if (-not (Test-DSObjectPath -Path $Destination @SearcherParams)) {
-            Write-Error "$($FunctionName): Destination OU doesn't seem to exist: $Destination"
-            return
+            throw "$($FunctionName): Destination OU doesn't seem to exist: $Destination"
         }
-        Else {
+        else {
+            # Otherwise get a DE of the destination OU for later
             Write-Verbose "$($FunctionName): Retreiving DN of the OU at $Destination"
             $OU = Get-DSDirectoryEntry @SearcherParams -DistinguishedName $Destination
         }
 
-        $SearcherParams.ReturnDirectoryEntry = $True
-        $SearcherParams.ChangeLogicOrder = $True
-        $YesToAll = $false
-        $NoToAll = $false
-    }
+        $GetObjectParams.ResultsAs = 'DirectoryEntry'
 
-    Process {
-        $Identities += $Identity
-    }
-    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
         Foreach ($ID in $Identities) {
-            $SearcherParams.Filter = @("distinguishedName=$ID","objectGUID=$ID","name=$ID","cn=$ID")
-            Get-DSObject @SearcherParams | ForEach-Object {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams | ForEach-Object {
                 $Name = $_.Properties['name']
                 Write-Verbose "$($FunctionName): Proccessing found object name: $Name"
                 if ($pscmdlet.ShouldProcess("Move AD Object $Name to $Destination", "Move AD Object $Name to $Destination?","Moving AD Object $Name")) {
                     if ($Force -Or $PSCmdlet.ShouldContinue("Are you REALLY sure you want to move '$Name'?", "Moving AD Object $Name", [ref]$YesToAll, [ref]$NotoAll)) {
                         try {
-                            ($_.GetDirectoryEntry()).MoveTo($OU)
+                            $_.MoveTo($OU)
                         }
                         catch {
-                            throw $_
+                            $ThisError = $_
+                            Write-Error "$($FunctionName): Unable to move $Name - $ThisError"
                         }
                     }
                 }

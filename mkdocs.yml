@@ -4,10 +4,12 @@ copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/m
 theme: readthedocs
 site_name: PSAD Docs
 Pages:
+  index: index.md
+  Contributing: Contributing.md
   Usage:
+  - Discovery: Usage\Discovery.md
   - Examples: Usage\Examples.md
   - IncludeAllProperties: Usage\IncludeAllProperties.md
-  ChangeLog: ChangeLog.md
   Functions:
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
@@ -17,10 +19,12 @@ Pages:
   - Format-DSSearchFilterValue: Functions\Format-DSSearchFilterValue.md
   - Get-CredentialState: Functions\Get-CredentialState.md
   - Get-DistinguishedNameFromFQDN: Functions\Get-DistinguishedNameFromFQDN.md
+  - Get-DSADFunctionalLevel: Functions\Get-DSADFunctionalLevel.md
   - Get-DSADSchemaVersion: Functions\Get-DSADSchemaVersion.md
   - Get-DSADSite: Functions\Get-DSADSite.md
   - Get-DSADSiteSubnet: Functions\Get-DSADSiteSubnet.md
   - Get-DSComputer: Functions\Get-DSComputer.md
+  - Get-DSConfigPartition: Functions\Get-DSConfigPartition.md
   - Get-DSConfigPartitionObject: Functions\Get-DSConfigPartitionObject.md
   - Get-DSCurrentConnectedDomain: Functions\Get-DSCurrentConnectedDomain.md
   - Get-DSCurrentConnectedForest: Functions\Get-DSCurrentConnectedForest.md
@@ -32,10 +36,12 @@ Pages:
   - Get-DSDirectoryEntry: Functions\Get-DSDirectoryEntry.md
   - Get-DSDirectorySearcher: Functions\Get-DSDirectorySearcher.md
   - Get-DSDomain: Functions\Get-DSDomain.md
+  - Get-DSDomainFunctionalLevel: Functions\Get-DSDomainFunctionalLevel.md
   - Get-DSExchangeFederation: Functions\Get-DSExchangeFederation.md
   - Get-DSExchangeSchemaVersion: Functions\Get-DSExchangeSchemaVersion.md
   - Get-DSExchangeServer: Functions\Get-DSExchangeServer.md
   - Get-DSForest: Functions\Get-DSForest.md
+  - Get-DSForestFunctionalLevel: Functions\Get-DSForestFunctionalLevel.md
   - Get-DSForestTrust: Functions\Get-DSForestTrust.md
   - Get-DSFRS: Functions\Get-DSFRS.md
   - Get-DSGPO: Functions\Get-DSGPO.md
@@ -45,10 +51,13 @@ Pages:
   - Get-DSLastLDAPFilter: Functions\Get-DSLastLDAPFilter.md
   - Get-DSLastSearchSetting: Functions\Get-DSLastSearchSetting.md
   - Get-DSObject: Functions\Get-DSObject.md
+  - Get-DSObjectACL: Functions\Get-DSObjectACL.md
   - Get-DSOCSSchemaVersion: Functions\Get-DSOCSSchemaVersion.md
   - Get-DSOCSTopology: Functions\Get-DSOCSTopology.md
+  - Get-DSOptionalFeature: Functions\Get-DSOptionalFeature.md
   - Get-DSOptionalFeatures: Functions\Get-DSOptionalFeatures.md
   - Get-DSPageSize: Functions\Get-DSPageSize.md
+  - Get-DSRootDSE: Functions\Get-DSRootDSE.md
   - Get-DSSCCMManagementPoint: Functions\Get-DSSCCMManagementPoint.md
   - Get-DSSCCMServer: Functions\Get-DSSCCMServer.md
   - Get-DSSCCMServiceLocatorPoint: Functions\Get-DSSCCMServiceLocatorPoint.md
@@ -61,8 +70,7 @@ Pages:
   - Set-DSPageSize: Functions\Set-DSPageSize.md
   - Test-DSObjectPath: Functions\Test-DSObjectPath.md
   ReleaseNotes: ReleaseNotes.md
-  index: index.md
-  Contributing: Contributing.md
   Acknowledgements: Acknowledgements.md
+  ChangeLog: ChangeLog.md
 repo_url: https://github.com/zloeber/PSAD
 

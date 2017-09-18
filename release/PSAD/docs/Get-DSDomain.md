@@ -30,7 +30,7 @@ Get information on the current domain the machine is a member of.
 ## PARAMETERS
 
 ### -Identity
-Forest name to retreive.
+Domain name to retreive.
 
 ```yaml
 Type: String

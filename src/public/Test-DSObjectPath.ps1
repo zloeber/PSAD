@@ -23,7 +23,8 @@
         [alias('Creds')]
         [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
+        [Alias('adsPath')]
         [string]$Path
     )
 

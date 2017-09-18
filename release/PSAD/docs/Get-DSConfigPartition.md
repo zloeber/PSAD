@@ -14,10 +14,10 @@ Retrieves information about the configuration partition.
 ```
 Get-DSConfigPartition [-Identity <String>] [-ComputerName <String>] [-Credential <PSCredential>]
  [-Limit <Int32>] [-SearchRoot <String>] [-Filter <String[]>] [-BaseFilter <String>] [-Properties <String[]>]
- [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String>] [-TombStone] [-ChangeLogicOrder]
+ [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String[]>] [-TombStone] [-ChangeLogicOrder]
  [-ModifiedAfter <DateTime>] [-ModifiedBefore <DateTime>] [-CreatedAfter <DateTime>]
  [-CreatedBefore <DateTime>] [-DontJoinAttributeValues] [-IncludeAllProperties] [-IncludeNullProperties]
- [-ExpandUAC] [-Raw] [-ResultsAs <String>]
+ [-ExpandUAC] [-Raw] [-ResultsAs <String>] [-LiteralFilter]
 ```
 
 ## DESCRIPTION
@@ -171,12 +171,11 @@ Accept wildcard characters: False
 
 ### -Identity
 Object to retreive.
-Accepts distinguishedname, GUID, and samAccountName.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: User, Name, sAMAccountName, distinguishedName
+Aliases: sAMAccountName, distinguishedName
 
 Required: False
 Position: Named
@@ -223,6 +222,21 @@ If zero there is no limit.
 Type: Int32
 Parameter Sets: (All)
 Aliases: SizeLimit
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -LiteralFilter
+Escapes special characters in the filter ()/\*\`0
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases: 
 
 Required: False
 Position: Named
@@ -355,7 +369,7 @@ Accept wildcard characters: False
 Security mask for search.
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases: 
 
