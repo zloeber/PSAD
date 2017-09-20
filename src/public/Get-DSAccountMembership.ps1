@@ -246,6 +246,7 @@
             $GetObjectParams.$_ = $PSBoundParameters.$_
         }
         $GetObjectParams.BaseFilter = $BaseFilter
+        $GetObjectParams.Properties = 'distinguishedname','name','memberof'
 
         $Identities += $Identity
     }
@@ -255,7 +256,17 @@
             Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
             $GetObjectParams.Identity = $ID
 
-            Get-DSObject @GetObjectParams
+            Get-DSObject @GetObjectParams | Foreach {
+                $DN = $_.distinguishedname
+                $ADObjName = $_.name
+                ($_).memberof -split ';' | Foreach {
+                    New-Object -TypeName psobject -Property @{
+                        'distinguishedname' = $DN
+                        'name' = $ADObjName
+                        'Group' = $_
+                    }
+                }
+            }
         }
     }
 }

@@ -4,64 +4,44 @@ online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
-# Set-DSObject
+# Enable-DSObject
 
 ## SYNOPSIS
 Sets properties of an AD object
 
 ## SYNTAX
 
-### Default (Default)
 ```
-Set-DSObject [-Identity <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
- [[-Property] <String>] [[-Value] <String>] [-Force] [-WhatIf] [-Confirm]
-```
-
-### MultiProperty
-```
-Set-DSObject [-Identity <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>]
- [[-Properties] <Hashtable>] [-Force] [-WhatIf] [-Confirm]
+Enable-DSObject [[-Identity] <String>] [[-ComputerName] <String>] [[-Credential] <PSCredential>] [-Force]
+ [-WhatIf] [-Confirm]
 ```
 
 ## DESCRIPTION
-Sets properties of an AD object.
-You can set a single property or pass in a hashtable of property/value pairs to be updated.
+Sets properties of an AD object
 
 ## EXAMPLES
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-$PropertiesToSet = @{
+Enable-DSObject -Identity 'jdoe'
 ```
-
-extensionAttribute10 = 'test'
-    extensionAttribute11 = 'test2'
-}
-Set-DSObject -Identity 'webextest' -Properties $PropertiesToSet -Credential (Get-Credential) -Verbose
-
-### -------------------------- EXAMPLE 2 --------------------------
-```
-Set-DSObject -Property 'facsimiletelephonenumber' -Identity jdoe -Credential $cred
-```
-
-Clears the facsimiletelephonenumber AD property of the jdoe account
 
 ## PARAMETERS
 
 ### -Identity
-Object to update.
-Accepts DN, GUID, and name formats.
+Object to enable.
+Accepts distinguishedname, GUID, and samAccountName.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: distinguishedname
+Aliases: sAMAccountName, distinguishedName
 
 Required: False
-Position: Named
+Position: 1
 Default value: None
 Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: True
+Accept wildcard characters: False
 ```
 
 ### -ComputerName
@@ -94,53 +74,8 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Properties
-A hash of properties to update.
-
-```yaml
-Type: Hashtable
-Parameter Sets: MultiProperty
-Aliases: 
-
-Required: False
-Position: 4
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -Property
-Property to update.
-
-```yaml
-Type: String
-Parameter Sets: Default
-Aliases: 
-
-Required: False
-Position: 4
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -Value
-Value to set the property to.
-
-```yaml
-Type: String
-Parameter Sets: Default
-Aliases: 
-
-Required: False
-Position: 5
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
 ### -Force
-Force update of the property without prompting.
+Force update of the property.
 
 ```yaml
 Type: SwitchParameter
@@ -148,7 +83,7 @@ Parameter Sets: (All)
 Aliases: 
 
 Required: False
-Position: 6
+Position: 4
 Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False

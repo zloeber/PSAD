@@ -24,7 +24,7 @@ function Remove-DSGroupMember {
         [Alias('GroupName')]
         [string]$Group,
 
-        [Parameter(HelpMessage = 'Force add group membership.')]
+        [Parameter(HelpMessage = 'Force remove group membership.')]
         [Switch]$Force
     )
 

@@ -10,7 +10,7 @@ PSAD stands for PowerShell Active Directory. This is an advanced ADSI powerShell
 - As another domain user
 - As another domain user against another server
 
-This allows for both casual local domain users and for non-domain joined workstations with alternate credentials to perform Active Directory discovery.
+This allows for both casual (local domain) users and for non-domain joined workstations with alternate credentials to perform Active Directory discovery.
 
 ## Introduction
 

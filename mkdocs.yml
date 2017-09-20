@@ -1,6 +1,6 @@
 ﻿edit_uri: edit/master/docs/
 site_author: Zachary Loeber
-copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/master/LICENSE.md'> license
+copyright: PSAD is licensed under the <a href='https://github.com/zloeber/PSAD/master/LICENSE.md'>Creative Commons</a> license
 theme: readthedocs
 site_name: PSAD Docs
 Pages:
@@ -11,14 +11,18 @@ Pages:
   - Examples: Usage\Examples.md
   - IncludeAllProperties: Usage\IncludeAllProperties.md
   Functions:
+  - Add-DSGroupMember: Functions\Add-DSGroupMember.md
+  - Add-DSTranslatedUAC: Functions\Add-DSTranslatedUAC.md
   - Connect-DSAD: Functions\Connect-DSAD.md
   - Convert-DSCSE: Functions\Convert-DSCSE.md
+  - Convert-DSName: Functions\Convert-DSName.md
   - Convert-DSUACProperty: Functions\Convert-DSUACProperty.md
   - Disable-DSObject: Functions\Disable-DSObject.md
   - Enable-DSObject: Functions\Enable-DSObject.md
   - Format-DSSearchFilterValue: Functions\Format-DSSearchFilterValue.md
   - Get-CredentialState: Functions\Get-CredentialState.md
   - Get-DistinguishedNameFromFQDN: Functions\Get-DistinguishedNameFromFQDN.md
+  - Get-DSAccountMembership: Functions\Get-DSAccountMembership.md
   - Get-DSADFunctionalLevel: Functions\Get-DSADFunctionalLevel.md
   - Get-DSADSchemaVersion: Functions\Get-DSADSchemaVersion.md
   - Get-DSADSite: Functions\Get-DSADSite.md
@@ -45,6 +49,7 @@ Pages:
   - Get-DSForestTrust: Functions\Get-DSForestTrust.md
   - Get-DSFRS: Functions\Get-DSFRS.md
   - Get-DSGPO: Functions\Get-DSGPO.md
+  - Get-DSGPOPassword: Functions\Get-DSGPOPassword.md
   - Get-DSGroup: Functions\Get-DSGroup.md
   - Get-DSGroupMember: Functions\Get-DSGroupMember.md
   - Get-DSGUIDMap: Functions\Get-DSGUIDMap.md
@@ -56,6 +61,7 @@ Pages:
   - Get-DSOCSTopology: Functions\Get-DSOCSTopology.md
   - Get-DSOptionalFeature: Functions\Get-DSOptionalFeature.md
   - Get-DSOptionalFeatures: Functions\Get-DSOptionalFeatures.md
+  - Get-DSOrganizationalUnit: Functions\Get-DSOrganizationalUnit.md
   - Get-DSPageSize: Functions\Get-DSPageSize.md
   - Get-DSRootDSE: Functions\Get-DSRootDSE.md
   - Get-DSSCCMManagementPoint: Functions\Get-DSSCCMManagementPoint.md
@@ -66,6 +72,7 @@ Pages:
   - Get-DSTombstoneLifetime: Functions\Get-DSTombstoneLifetime.md
   - Get-DSUser: Functions\Get-DSUser.md
   - Move-DSObject: Functions\Move-DSObject.md
+  - Remove-DSGroupMember: Functions\Remove-DSGroupMember.md
   - Set-DSObject: Functions\Set-DSObject.md
   - Set-DSPageSize: Functions\Set-DSPageSize.md
   - Test-DSObjectPath: Functions\Test-DSObjectPath.md

@@ -24,6 +24,10 @@
         extensionAttribute11 = 'test2'
     }
     Set-DSObject -Identity 'webextest' -Properties $PropertiesToSet -Credential (Get-Credential) -Verbose
+    .EXAMPLE
+    Set-DSObject -Property 'facsimiletelephonenumber' -Identity jdoe -Credential $cred
+
+    Clears the facsimiletelephonenumber AD property of the jdoe account
     .NOTES
     Author: Zachary Loeber
     .LINK
@@ -35,7 +39,7 @@
         [Parameter(ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, ParameterSetName='MultiProperty')]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
-        [Alias('Name','distinguishedname')]
+        [Alias('distinguishedname')]
         [string]$Identity,
 
         [Parameter(Position = 1, ParameterSetName='Default')]
@@ -111,15 +115,30 @@
                     else {
                         $CurrentValue = '<empty>'
                     }
+                    if ([string]::IsNullOrEmpty($Value)) {
+                        $DisplayValue = '<empty>'
+                        $ClearValue = $true
+                    }
+                    else {
+                        $DisplayValue = $Value
+                        $ClearValue = $False
+                    }
                     Write-Verbose "$($FunctionName): Proccessing found object name: $Name"
-                    if ($pscmdlet.ShouldProcess("Update AD Object $Name property = '$Property', value = '$Value' (Existing value is '$CurrentValue')", "Update AD Object $Name property = '$Property', value = '$Value' (Existing value is '$CurrentValue')","Updating AD Object $Name property $Property")) {
-                        if ($Force -Or $PSCmdlet.ShouldContinue("Are you REALLY sure you want to Update '$Name' property $Property (Existing value is '$CurrentValue') with the value of $Value ?", "Updating AD Object $Name", [ref]$YesToAll, [ref]$NotoAll)) {
+                    if ($pscmdlet.ShouldProcess("Update AD Object $Name property = '$Property', value = '$DisplayValue' (Existing value is '$CurrentValue')", "Update AD Object $Name property = '$Property', value = '$DisplayValue' (Existing value is '$CurrentValue')","Updating AD Object $Name property $Property")) {
+                        if ($Force -Or $PSCmdlet.ShouldContinue("Are you REALLY sure you want to Update '$Name' property $Property (Existing value is '$CurrentValue') with the value of $DisplayValue ?", "Updating AD Object $Name", [ref]$YesToAll, [ref]$NotoAll)) {
                             try {
-                                $DE.psbase.InvokeSet($Property,$Value)
+                                if ($ClearValue) {
+                                    Write-Verbose "$($FunctionName): Attempting to clear the attribute"
+                                    $DE.PutEx(1, $Property, 0)
+                                }
+                                else {
+                                    Write-Verbose "$($FunctionName): Attempting to set the attribute"
+                                    $DE.psbase.InvokeSet($Property,$Value)
+                                }
                                 $DE.SetInfo()
                             }
                             catch {
-                                Write-Warning "$($FunctionName): Unable to update $Name property $Property with $Value"
+                                Write-Warning "$($FunctionName): Unable to update $Name property $Property with $DisplayValue"
                             }
                         }
                     }

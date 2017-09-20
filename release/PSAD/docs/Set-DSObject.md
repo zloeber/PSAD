@@ -39,6 +39,13 @@ extensionAttribute10 = 'test'
 }
 Set-DSObject -Identity 'webextest' -Properties $PropertiesToSet -Credential (Get-Credential) -Verbose
 
+### -------------------------- EXAMPLE 2 --------------------------
+```
+Set-DSObject -Property 'facsimiletelephonenumber' -Identity jdoe -Credential $cred
+```
+
+Clears the facsimiletelephonenumber AD property of the jdoe account
+
 ## PARAMETERS
 
 ### -Identity
@@ -48,7 +55,7 @@ Accepts DN, GUID, and name formats.
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Name, distinguishedname
+Aliases: distinguishedname
 
 Required: False
 Position: Named
