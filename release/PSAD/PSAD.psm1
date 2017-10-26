@@ -149,6 +149,18 @@ Add-Type -TypeDefinition @"
 "@
 
 Add-Type -TypeDefinition @"
+[System.Flags]
+public enum DomainPwdPropertiesFlags {
+    RequireComplexPasswords = 0x0001,
+    DOMAIN_PASSWORD_NO_ANON_CHANGE = 0x0002,
+    DOMAIN_PASSWORD_NO_CLEAR_CHANGE = 0x0004,
+    DOMAIN_LOCKOUT_ADMINS = 0x0008,
+    StorePasswordsInClearText = 0x0010,
+    DOMAIN_REFUSE_PASSWORD_CHANGE = 0x0020
+}
+"@
+
+Add-Type -TypeDefinition @"
     [System.Flags]
     public enum nTDSSiteConnectionSettingsFlags {
         IS_GENERATED                  = 0x00000001,
@@ -217,6 +229,15 @@ $UACAttribs = @(
     'PASSWORD_EXPIRED',
     'TRUSTED_TO_AUTH_FOR_DELEGATION',
     'PARTIAL_SECRETS_ACCOUNT'
+)
+
+$PwdPropertyAttribs = @(
+    'RequireComplexPasswords',
+    'DOMAIN_PASSWORD_NO_ANON_CHANGE',
+    'DOMAIN_PASSWORD_NO_CLEAR_CHANGE',
+    'DOMAIN_LOCKOUT_ADMINS',
+    'StorePasswordsInClearText',
+    'DOMAIN_REFUSE_PASSWORD_CHANGE'
 )
 
 # Hash of different GUIDs for gpo settings
@@ -2969,6 +2990,36 @@ Function Convert-DSName {
 
 
 
+function Convert-DSPwdProperty {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.1.3/docs/Functions/Convert-DSPwdProperty.md
+    #>
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [string]$PwdProperties
+    )
+    if ($Script:ThisModuleLoaded) {
+        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    }
+    $FunctionName = $MyInvocation.MyCommand.Name
+    Write-Verbose "$($FunctionName): Begin."
+    try {
+        $Props = [Enum]::Parse('DomainPwdPropertiesFlags', $PwdProperties)
+        $Script:PwdPropertyAttribs | Foreach-Object {
+            if ($Props -match $_) {
+                $_
+            }
+        }
+    }
+    catch {
+        Write-Warning -Message ("$($FunctionName) {0}" -f $_.Exception.Message)
+    }
+}
+
+
 function Convert-DSUACProperty {
     <#
     .EXTERNALHELP PSAD-help.xml
@@ -4234,7 +4285,7 @@ function Get-DSDomain {
 
     Process {
         try {
-            $context = Get-DSDirectoryContext -ContextType 'Domain' -ContextName $DomainName -ComputerName $ComputerName -Credential $Credential
+            $context = Get-DSDirectoryContext -ContextType 'Domain' -ContextName $Identity -ComputerName $ComputerName -Credential $Credential
             $DomainObject = [DirectoryServices.ActiveDirectory.Domain]::GetDomain($context)
 
             $RootDN = "DC=$(($DomainObject.Name).replace('.',',DC='))"
@@ -4251,6 +4302,87 @@ function Get-DSDomain {
             else {
                 $DomainObject
             }
+        }
+        catch {
+            throw
+        }
+    }
+}
+
+
+
+function Get-DSDomainPasswordPolicy {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.1.3/docs/Functions/Get-DSDomainPasswordPolicy.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
+        [Alias('Name','Domain','DomainName')]
+        [string]$Identity = ($Script:CurrentDomain).name,
+
+        [Parameter( Position = 1 )]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter( Position = 2 )]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
+    )
+
+    Begin {
+        # Function initialization
+        if ($Script:IsLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+        $FunctionName = $MyInvocation.MyCommand.Name
+        Write-Verbose "$($FunctionName): Begin."
+
+        $DSParams = @{
+            ComputerName = $ComputerName
+            Credential = $Credential
+        }
+
+        if ($null -eq $Identity) {
+            try {
+                $Identity = (Get-DSDomain @DSParams).GetDirectoryEntry().distinguishedName
+            }
+            catch {
+                throw
+            }
+        }
+
+        <#
+        ComplexityEnabled           : True
+    DistinguishedName           : DC=contoso,DC=com
+    LockoutDuration             : 00:15:00
+    LockoutObservationWindow    : 00:14:00
+    LockoutThreshold            : 6
+    MaxPasswordAge              : 90.00:00:00
+    MinPasswordAge              : 7.00:00:00
+    MinPasswordLength           : 8
+    PasswordHistoryCount        : 24
+    ReversibleEncryptionEnabled : False
+        #>
+        $DomainProps = @(
+            @{n='DistinguishedName';e={$_.DistinguishedName}},
+            @{n='ComplexityEnabled';e={($_.pwdproperties -contains ('RequireComplexPasswords'))}},
+            @{n='LockoutDuration';e={$_.lockoutduration}},
+            @{n='LockoutObservationWindow';e={$_.lockoutobservationwindow}},
+            @{n='LockoutThreshold';e={$_.lockoutthreshold}},
+            @{n='MaxPasswordAge';e={$_.maxpwdage}},
+            @{n='MinPasswordAge';e={$_.minpwdage}},
+            @{n='MinPasswordLength';e={$_.minpwdlength}},
+            @{n='PasswordHistoryCount';e={$_.pwdhistorylength}},
+            @{n='ReversibleEncryptionEnabled';e={($_.pwdproperties -contains ('StorePasswordsInClearText'))}}
+        )
+    }
+
+    process {
+        try {
+            Get-DSObject -Identity $Identity -SearchScope:Base @DSParams -IncludeAllProperties | Select $DomainProps
         }
         catch {
             throw
@@ -4362,28 +4494,50 @@ function Get-DSExchangeSchemaVersion {
     )
 
     begin {
-        Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
+
+        $DSParams = @{
+            ComputerName = $ComputerName
+            Credential = $Credential
+        }
     }
 
     process {
         try {
-            $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' -ComputerName $ComputerName -Credential $Credential
-            $RangeUpper = (Get-DSObject -SearchRoot "CN=ms-Exch-Schema-Version-Pt,CN=Schema,$($rootDSE.configurationNamingContext)" -Properties 'rangeUpper' -ComputerName $ComputerName -Credential $Credential).rangeUpper
-
+            $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+            $RangeUpper = (Get-DSObject -SearchRoot "CN=ms-Exch-Schema-Version-Pt,CN=Schema,$($rootDSE.configurationNamingContext)" -Properties 'rangeUpper' @DSParams).rangeUpper
             if (($Script:SchemaVersionTable).Keys -contains $RangeUpper) {
-                Write-Verbose "$($FunctionName): Exchange schema version found."
-                $Script:SchemaVersionTable[$RangeUpper]
+                $SchemaVersion = $Script:SchemaVersionTable[$RangeUpper]
             }
             else {
-                Write-Verbose "$($FunctionName): Exchange schema version not in our list."
-                $RangeUpper
+                $SchemaVersion = 'Unknown'
+            }
+
+            $ObjectVersion = (Get-DSObject -SearchRoot "CN=Microsoft Exchange System Objects,$($RootDSE.defaultNamingContext)" -Properties 'objectVersion' @DSParams).objectVersion
+            $AdminGroups = @(Get-DSObject -Filter 'msExchAdminGroupsEnabled=*' -SearchRoot $RootDSE.configurationNamingContext @DSParams)
+            Write-Verbose "$($FunctionName): Admin groups found - $($AdminGroup.Count)"
+
+            $VersionInfo = @()
+            Foreach ($AdminGroup in $AdminGroups) {
+                Write-Verbose "$($FunctionName): Retrieving version information for $($AdminGroup.Name)"
+                $VersionInfo += New-Object -TypeName PSObject -Property @{
+                    'AdminGroup' = $AdminGroup.Name
+                    'AdminGroupProductID' = (Get-DSObject -SearchRoot $AdminGroup.distinguishedName -Properties 'msExchProductId' -SearchScope:Base @DSParams).msExchProductId
+                    'AdminGroupObjectVersion' = (Get-DSObject -SearchRoot $AdminGroup.distinguishedName  -Properties 'ObjectVersion' @DSParams).ObjectVersion
+                    'ms-Exch-Schema-Version-Pt' = $RangeUpper
+                    'SchemaVersion' = $SchemaVersion
+                }
             }
         }
         catch {
-            return $null
+            throw
         }
+
+        $VersionInfo
     }
 }
 
@@ -4415,10 +4569,13 @@ function Get-DSExchangeServer {
             Credential = $Credential
         }
 
-        $ExchangeConfig = @(Get-DSExchangeSchemaVersion @DSParams)
-        if ($ExchangeConfig -eq $null) {
+        $RootDSE = Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams
+        $ConfigNamingContext = $rootDSE.configurationNamingContext
+        $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
+
+        if (-not (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams)) {
             # Exchange isn't in the environment
-            Write-Verbose "$($FunctionName): No exchange environment found."
+            Write-Verbose "$($FunctionName): No exchange environment found in $Path_ExchangeOrg."
             return $null
         }
         $Props_ExchOrgs = @(
@@ -4435,71 +4592,118 @@ function Get-DSExchangeServer {
             'serialnumber',
             'msexchproductid'
         )
-
-        $ConfigNamingContext = (Get-DSDirectoryEntry -DistinguishedName 'rootDSE' @DSParams).configurationNamingContext
-        $Path_ExchangeOrg = "LDAP://CN=Microsoft Exchange,CN=Services,$($ConfigNamingContext)"
     }
 
     end {
-        if (Test-DSObjectPath -Path $Path_ExchangeOrg @DSParams) {
+        $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
 
-            $ExchOrgs = @(Get-DSObject -Filter 'objectClass=msExchOrganizationContainer' -SearchRoot $Path_ExchangeOrg -SearchScope:SubTree -Properties $Props_ExchOrgs @DSParams)
+        ForEach ($ExchOrg in $ExchOrgs) {
+            $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
 
-            ForEach ($ExchOrg in $ExchOrgs) {
-                $ExchServers = @(Get-DSObject -Filter 'objectCategory=msExchExchangeServer' -SearchRoot $ExchOrg.distinguishedname  -SearchScope:SubTree -Properties $Props_ExchServers  @DSParams)
+            # Get all found Exchange server information
+            ForEach ($ExchServer in $ExchServers) {
+                $AdminGroup = Get-ADPathName $ExchServer.adspath -GetElement 2 -ValuesOnly
+                $ExchSite =  Get-ADPathName $ExchServer.msexchserversite -GetElement 0 -ValuesOnly
+                $ExchRole = $ExchServer.msexchcurrentserverroles
 
-                # Get all found Exchange server information
-                ForEach ($ExchServer in $ExchServers) {
-                    $AdminGroup = Get-ADPathName $ExchServer.adspath -GetElement 2 -ValuesOnly
-                    $ExchSite =  Get-ADPathName $ExchServer.msexchserversite -GetElement 0 -ValuesOnly
-                    $ExchRole = $ExchServer.msexchcurrentserverroles
-
-                    # only have two roles in Exchange 2013 so we process a bit differently
-                    if ($ExchServer.serialNumber -like "Version 15*") {
-                        switch ($ExchRole) {
-                            '54' {
-                                $ExchRole = 'MAILBOX'
-                            }
-                            '16385' {
-                                $ExchRole = 'CAS'
-                            }
-                            '16439' {
-                                $ExchRole = 'MAILBOX, CAS'
-                            }
+                # only have two roles in Exchange 2013 so we process a bit differently
+                if ($ExchServer.serialNumber -like "Version 15*") {
+                    switch ($ExchRole) {
+                        '54' {
+                            $ExchRole = 'MAILBOX'
+                        }
+                        '16385' {
+                            $ExchRole = 'CAS'
+                        }
+                        '16439' {
+                            $ExchRole = 'MAILBOX, CAS'
                         }
                     }
-                    else {
-                        if($ExchRole -ne 0) {
-                            $ExchRole = [Enum]::Parse('MSExchCurrentServerRolesFlags', $ExchRole)
-                        }
+                }
+                else {
+                    if($ExchRole -ne 0) {
+                        $ExchRole = [Enum]::Parse('MSExchCurrentServerRolesFlags', $ExchRole)
                     }
-                    $ServerVersion = $ExchServer.serialnumber
-                    if ($ExchServer.serialnumber -match '^Version\s(.*)\s\(.*$') {
-                        $ThisServerVersion = $Matches[1]
-                        if ($ExchangeServerVersions.ContainsKey($ThisServerVersion)) {
-                            $ServerVersion = $ExchangeServerVersions.($ThisServerVersion)
-                        }
+                }
+                $ServerVersion = $ExchServer.serialnumber
+                if ($ExchServer.serialnumber -match '^Version\s(.*)\s\(.*$') {
+                    $ThisServerVersion = $Matches[1]
+                    if ($ExchangeServerVersions.ContainsKey($ThisServerVersion)) {
+                        $ServerVersion = $ExchangeServerVersions.($ThisServerVersion)
                     }
-                    New-Object -TypeName PSObject -Property @{
-                        Organization = $ExchOrg.Name
-                        AdminGroup = $AdminGroup
-                        Name = $ExchServer.adminDisplayName
-                        Version = $ServerVersion
-                        Role = $ExchRole
-                        Site = $ExchSite
-                        Created = $ExchServer.whencreated
-                        Serial = $ExchServer.serialnumber
-                        ProductID = $ExchServer.msexchproductid
-                    }
+                }
+                New-Object -TypeName PSObject -Property @{
+                    Organization = $ExchOrg.Name
+                    AdminGroup = $AdminGroup
+                    Name = $ExchServer.adminDisplayName
+                    Version = $ServerVersion
+                    Role = $ExchRole
+                    Site = $ExchSite
+                    Created = $ExchServer.whencreated
+                    Serial = $ExchServer.serialnumber
+                    ProductID = $ExchServer.msexchproductid
                 }
             }
         }
-        else {
-            Write-Warning "$($FunctionName): Exchange found in schema but nothing found in services path - $Path_ExchangeOrg"
-            return $null
+    }
+}
+
+
+function Get-DSFineGrainPasswordPolicy {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.1.3/docs/Functions/Get-DSFineGrainPasswordPolicy.md
+    #>
+    [CmdletBinding(PositionalBinding=$false)]
+    param()
+
+    DynamicParam {
+        # Create dictionary
+        New-ProxyFunction -CommandName 'Get-DSObject' -CommandType 'Function'
+    }
+
+    begin {
+        # Function initialization
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+        $FunctionName = $MyInvocation.MyCommand.Name
+        Write-Verbose "$($FunctionName): Begin."
+
+        # Build our base filter (overwrites any dynamic parameter sent base filter)
+        $BaseFilters = @('objectCategory=msDS-PasswordSettings')
+
+        $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
+        $Identities = @()
+    }
+
+    process {
+        # Pull in all the dynamic parameters (generated from get-dsobject)
+        # as we might have values via pipeline we need to do this in the process block.
+        if ($PSBoundParameters.Count -gt 0) {
+            New-DynamicParameter -CreateVariables -BoundParameters $PSBoundParameters
+        }
+
+        $GetObjectParams = @{}
+        $PSBoundParameters.Keys | Where-Object { ($Script:GetDSObjectParameters -contains $_) } | Foreach-Object {
+            $GetObjectParams.$_ = $PSBoundParameters.$_
+        }
+        $GetObjectParams.BaseFilter = $BaseFilter
+
+        $Identities += $Identity
+    }
+    end {
+        Write-Verbose "$($FunctionName): Searching with base filter: $BaseFilter"
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Searching for idenity: $($ID)"
+            $GetObjectParams.Identity = $ID
+
+            Get-DSObject @GetObjectParams
         }
     }
 }
+
 
 
 function Get-DSForest {
@@ -4903,15 +5107,22 @@ function Get-DSGroupMember {
             $GetObjectParams.Properties = 'distinguishedname'
 
             try {
-                $GroupDN = (Get-DSGroup @GetObjectParams).distinguishedname
-                if ($Recurse) {
-                    $GetMemberParams.BaseFilter += "memberof:1.2.840.113556.1.4.1941:=$GroupDN"
+                if ($ID -like "CN=*") {
+                    $GroupDN = $ID
                 }
                 else {
-                    $GetMemberParams.BaseFilter += "memberof=$GroupDN"
+                    $GroupDN = (Get-DSGroup @GetObjectParams).distinguishedname
                 }
+                if ($null -ne $GroupDN) {
+                    if ($Recurse) {
+                        $GetMemberParams.BaseFilter = "memberof:1.2.840.113556.1.4.1941:=$GroupDN"
+                    }
+                    else {
+                        $GetMemberParams.BaseFilter = "memberof=$GroupDN"
+                    }
 
-                Get-DSObject @GetMemberParams
+                    Get-DSObject @GetMemberParams | Add-Member -MemberType 'noteproperty' -name 'Group' -Value $ID -PassThru
+                }
             }
             catch {
                 Write-Warning "$($FunctionName): Unable to find group with ID of $ID"
@@ -4992,7 +5203,7 @@ function Get-DSObject {
     [CmdletBinding()]
     [OutputType([object],[System.DirectoryServices.DirectoryEntry],[System.DirectoryServices.DirectorySearcher])]
     param(
-        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive.')]
+        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive.' )]
         [Alias('sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
@@ -5080,6 +5291,12 @@ function Get-DSObject {
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
+        if ($ExpandUAC) {
+            if ($Properties -notcontains 'useraccountcontrol') {
+                $Properties += 'useraccountcontrol'
+            }
+        }
+
     }
     Process {
         $SearcherParams = Get-CommonSearcherParams `
@@ -5157,11 +5374,11 @@ function Get-DSObject {
                                     'accountexpires' {
                                         Write-Verbose "$($FunctionName): Reformatting accountexpires"
                                         try {
-                                            if (($Val[0] -eq 0) -or ($Val[0] -gt [DateTime]::MaxValue.Ticks)) {
+                                            if (($Val -eq 0) -or ($Val -gt [DateTime]::MaxValue.Ticks)) {
                                                 $Val = '<Never>'
                                             }
                                             else {
-                                                $Val = ([DateTime]$exval).AddYears(1600).ToLocalTime()
+                                                $Val = ([DateTime]([convert]::ToInt64($Val[0]))).AddYears(1600).ToLocalTime()
                                             }
                                         }
                                         catch {
@@ -5226,6 +5443,21 @@ function Get-DSObject {
                                         Write-Verbose "$($FunctionName): Reformatting $Prop"
                                         $Val = Convert-DSCSE -CSEString $Val[0]
                                     }
+                                    { @( 'maxpwdage', 'minpwdage' ) -contains $_ } {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = [math]::abs(([convert]::ToInt64($Val[0])) / (600000000 * 1440))
+                                    }
+                                    { @('lockoutDuration', 'lockoutobservationwindow') -contains $_ } {
+                                        $Val = ([timespan]::FromTicks([math]::abs($Val[0]))).toString()
+                                    }
+                                    'pwdproperties' {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = Convert-DSPwdProperty -PwdProperties $Val[0]
+                                    }
+                                    'creationtime' {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = (get-date 1/1/1601).AddDays([convert]::ToInt64($Val[0]/864000000000)).ToString()
+                                    }
                                     Default {
                                         # try to convert misc objects as best we can
                                         if ($Val[0] -is [System.Byte[]]) {
@@ -5255,8 +5487,8 @@ function Get-DSObject {
                     # Only return results that have more than 0 properties
                     if ($ObjectProps.psbase.keys.count -ge 1) {
                         # if we include all or even null properties then we poll the schema for our object's possible properties
-                        if ($IncludeAllProperties -or $IncludeNullProperties) {
-                            if (-not ($Script:__ad_schema_info.ContainsKey($ObjClass))) {
+                        if ($IncludeAllProperties -or $IncludeNullProperties -and ($null -ne $ObjClass)) {
+                            if (-not (($Script:__ad_schema_info).ContainsKey($ObjClass))) {
                                 Write-Verbose "$($FunctionName): Storing schema attributes for $ObjClass for the first time"
                                 Write-Verbose "$($FunctionName): Object class being queried for in the schema = $objClass"
                                 ($Script:__ad_schema_info).$ObjClass = @(((Get-DSCurrentConnectedSchema).FindClass($objClass)).OptionalProperties).Name
@@ -5598,7 +5830,7 @@ function Get-DSOptionalFeature {
 
     end {
         if ((Test-DSObjectPath -Path $ConfigPathContext @DSParams)) {
-            Get-DSObject -SearchRoot $ConfigPathContext @DSParams -Filter 'objectClass=msDS-OptionalFeature' -Properties *
+            Get-DSObject -SearchRoot $ConfigPathContext @DSParams -Filter 'objectClass=msDS-OptionalFeature' -IncludeAllProperties
         }
         else {
             Write-Warning "$($FunctionName): Unable to find the path - $ConfigPathContext"
@@ -6245,6 +6477,104 @@ function Move-DSObject {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+
+
+function New-DSObject {
+    <#
+    .EXTERNALHELP PSAD-help.xml
+    .LINK
+        https://github.com/zloeber/PSAD/tree/master/release/0.1.3/docs/Functions/New-DSObject.md
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Identity,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateSet('user','organizationalUnit','group','contact')]
+        [string]$ObjectType,
+
+        [Parameter()]
+        [hashtable]$OtherAttributes,
+
+        [Parameter()]
+        [Alias('Server','ServerName')]
+        [string]$ComputerName = $Script:CurrentServer,
+
+        [Parameter()]
+        [alias('Creds')]
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
+    )
+
+    begin {
+        # Function initialization
+        if ($Script:ThisModuleLoaded) {
+            Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+        }
+        $FunctionName = $MyInvocation.MyCommand.Name
+        Write-Verbose "$($FunctionName): Begin."
+
+        $Identities = @()
+
+        $SearcherParams = @{
+            ComputerName = $ComputerName
+            Credential = $Credential
+        }
+
+        try {
+            $OU = Get-DSOrganizationalUnit -Identity $Path -ResultsAs directoryentry @SearcherParams
+            if ($null -eq $OU) {
+                throw "Unable to find the path (ou): $Path"
+            }
+            else {
+                Write-Verbose "$($FunctionName): Found OU Path $OU"
+            }
+        }
+        catch {
+            throw "Unable to find the path (ou): $Path"
+        }
+
+        $Prefix = 'cn='
+        switch ($ObjectType) {
+            {@('user','contact','group') -contains $_ } {
+                $Prefix = 'cn='
+            }
+            'organizationalUnit' {
+                $Prefix = 'ou='
+            }
+        }
+        Write-Verbose "$($FunctionName): Prefix set to $Prefix"
+    }
+    process {
+        $Identities += $Identity
+    }
+    end {
+        Foreach ($ID in $Identities) {
+            Write-Verbose "$($FunctionName): Attempting to create $ObjectType with the name of $Prefix$ID"
+            try {
+                $NewObj = $OU.Create($ObjectType, "$Prefix$ID")
+                if ($OtherAttributes) {
+                    $OtherAttributes.Keys | ForEach-Object {
+                        Write-Verbose "$($FunctionName): -- Setting additional attribute $($_) to $($OtherAttributes[$_])"
+                        $NewObj.put($_, $OtherAttributes[$_])
+                    }
+                }
+
+                Write-Verbose "$($FunctionName): Attempting to save the object.."
+                $NewObj.SetInfo()
+            }
+            catch {
+                $_
             }
         }
     }

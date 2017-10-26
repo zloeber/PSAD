@@ -26,6 +26,9 @@ Converts a GPO client side extension setting string of GUIDs to readable text.
 ### [Convert-DSName](Convert-DSName.md)
 Translates Active Directory names between various formats.
 
+### [Convert-DSPwdProperty](Convert-DSPwdProperty.md)
+Takes the useraccesscontrol property, evaluates it, and spits out all set UAC properties
+
 ### [Convert-DSUACProperty](Convert-DSUACProperty.md)
 Takes the useraccesscontrol property, evaluates it, and spits out all set UAC properties
 
@@ -86,6 +89,9 @@ Get a diresctory searcher object fro a given domain.
 ### [Get-DSDomain](Get-DSDomain.md)
 Retrieve an ADSI domain object.
 
+### [Get-DSDomainPasswordPolicy](Get-DSDomainPasswordPolicy.md)
+Retrieves default password policy for given domain.
+
 ### [Get-DSExchangeFederation](Get-DSExchangeFederation.md)
 Retreives Exchange federations from active directory.
 
@@ -94,6 +100,9 @@ Retreives the Exchange schema version in human readable format.
 
 ### [Get-DSExchangeServer](Get-DSExchangeServer.md)
 Retreives Exchange servers from active directory.
+
+### [Get-DSFineGrainPasswordPolicy](Get-DSFineGrainPasswordPolicy.md)
+Retrieve fine grained password policies.
 
 ### [Get-DSForest](Get-DSForest.md)
 Retrieve an ADSI forest object.
@@ -169,6 +178,9 @@ Get Account objects in a given directory service.
 
 ### [Move-DSObject](Move-DSObject.md)
 Moves AD objects to a destination OU.
+
+### [New-DSObject](New-DSObject.md)
+Creates a new object in AD.
 
 ### [Remove-DSGroupMember](Remove-DSGroupMember.md)
 Removes AD objects to a specified group.

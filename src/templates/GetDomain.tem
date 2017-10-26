@@ -1,4 +1,4 @@
-﻿function Get-DSDomain {
+﻿function %%FunctionName%% {
     <#
     .SYNOPSIS
     Retrieve an ADSI domain object.
@@ -10,17 +10,15 @@
     Alternate credentials for retrieving domain information.
     .PARAMETER Identity
     Domain name to retreive.
-    .PARAMETER UpdateCurrent
-    Updates the module stored currently connected forest object
     .EXAMPLE
-    C:\PS> Get-DSDomain
-    Get information on the current domain the machine is a member of.
+    C:\PS> %%FunctionName%%
+
     .OUTPUTS
-    System.DirectoryServices.ActiveDirectory.Domain
+    Object
     .NOTES
-    Author: Zachary Loeber
+    Author: %%ModuleAuthor%%
     .LINK
-    https://github.com/zloeber/PSAD
+    %%ModuleWebsite%%
     #>
     [CmdletBinding()]
     param(
@@ -34,10 +32,7 @@
 
         [Parameter( Position = 2 )]
         [alias('Creds')]
-        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential,
-
-        [Parameter( Position = 3 )]
-        [switch]$UpdateCurrent
+        [Management.Automation.PSCredential]$Credential = $Script:CurrentCredential
     )
 
     Begin {
@@ -51,7 +46,7 @@
 
     Process {
         try {
-            $context = Get-DSDirectoryContext -ContextType 'Domain' -ContextName $Identity -ComputerName $ComputerName -Credential $Credential
+            $context = Get-DSDirectoryContext -ContextType 'Domain' -ContextName $DomainName -ComputerName $ComputerName -Credential $Credential
             $DomainObject = [DirectoryServices.ActiveDirectory.Domain]::GetDomain($context)
 
             $RootDN = "DC=$(($DomainObject.Name).replace('.',',DC='))"
@@ -62,12 +57,7 @@
             Add-Member -InputObject $DomainObject -MemberType NoteProperty -Name 'Sid' -Value $Sid
             Add-Member -InputObject $DomainObject -MemberType NoteProperty -Name 'Guid' -Value $guid
 
-            if ($UpdateCurrent) {
-                $Script:CurrentDomain = $DomainObject
-            }
-            else {
-                $DomainObject
-            }
+            $DomainObject
         }
         catch {
             throw

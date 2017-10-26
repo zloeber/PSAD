@@ -1,22 +1,19 @@
-function Get-DSWhatever {
+function %%FunctionName%% {
     <#
     .SYNOPSIS
     Example function that will get some specific type of AD object based on some base filter.
     .DESCRIPTION
     TBD
-    .PARAMETER AdminCount
-    AdminCount property is set. (example additional filter)
+
     .EXAMPLE
     TBD
     .NOTES
-    NA
+    Author: %%ModuleAuthor%%
     .LINK
-    https://github.com/zloeber/PSAD
+    %%ModuleWebsite%%
     #>
     [CmdletBinding(PositionalBinding=$false)]
     param(
-        [Parameter()]
-        [switch]$AdminCount
     )
 
     DynamicParam {
@@ -34,11 +31,6 @@ function Get-DSWhatever {
 
         # Build our base filter (overwrites any dynamic parameter sent base filter)
         $BaseFilters = @('objectCategory=somecategory')
-
-        # Filter for accounts who have an adcmicount filed higher than 0.
-        if ($AdminCount) {
-            $BaseFilters += "admincount>=1"
-        }
 
         $BaseFilter = Get-CombinedLDAPFilter -Filter $BaseFilters
 

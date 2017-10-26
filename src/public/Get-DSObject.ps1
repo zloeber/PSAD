@@ -63,7 +63,7 @@
     [CmdletBinding()]
     [OutputType([object],[System.DirectoryServices.DirectoryEntry],[System.DirectoryServices.DirectorySearcher])]
     param(
-        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive.')]
+        [Parameter( position = 0 , ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, HelpMessage='Object to retreive.' )]
         [Alias('sAMAccountName', 'distinguishedName')]
         [string]$Identity,
 
@@ -151,6 +151,12 @@
         $FunctionName = $MyInvocation.MyCommand.Name
         Write-Verbose "$($FunctionName): Begin."
 
+        if ($ExpandUAC) {
+            if ($Properties -notcontains 'useraccountcontrol') {
+                $Properties += 'useraccountcontrol'
+            }
+        }
+
     }
     Process {
         $SearcherParams = Get-CommonSearcherParams `
@@ -228,11 +234,11 @@
                                     'accountexpires' {
                                         Write-Verbose "$($FunctionName): Reformatting accountexpires"
                                         try {
-                                            if (($Val[0] -eq 0) -or ($Val[0] -gt [DateTime]::MaxValue.Ticks)) {
+                                            if (($Val -eq 0) -or ($Val -gt [DateTime]::MaxValue.Ticks)) {
                                                 $Val = '<Never>'
                                             }
                                             else {
-                                                $Val = ([DateTime]$exval).AddYears(1600).ToLocalTime()
+                                                $Val = ([DateTime]([convert]::ToInt64($Val[0]))).AddYears(1600).ToLocalTime()
                                             }
                                         }
                                         catch {
@@ -297,6 +303,21 @@
                                         Write-Verbose "$($FunctionName): Reformatting $Prop"
                                         $Val = Convert-DSCSE -CSEString $Val[0]
                                     }
+                                    { @( 'maxpwdage', 'minpwdage' ) -contains $_ } {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = [math]::abs(([convert]::ToInt64($Val[0])) / (600000000 * 1440))
+                                    }
+                                    { @('lockoutDuration', 'lockoutobservationwindow') -contains $_ } {
+                                        $Val = ([timespan]::FromTicks([math]::abs($Val[0]))).toString()
+                                    }
+                                    'pwdproperties' {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = Convert-DSPwdProperty -PwdProperties $Val[0]
+                                    }
+                                    'creationtime' {
+                                        Write-Verbose "$($FunctionName): Reformatting $Prop"
+                                        $Val = (get-date 1/1/1601).AddDays([convert]::ToInt64($Val[0]/864000000000)).ToString()
+                                    }
                                     Default {
                                         # try to convert misc objects as best we can
                                         if ($Val[0] -is [System.Byte[]]) {
@@ -326,8 +347,8 @@
                     # Only return results that have more than 0 properties
                     if ($ObjectProps.psbase.keys.count -ge 1) {
                         # if we include all or even null properties then we poll the schema for our object's possible properties
-                        if ($IncludeAllProperties -or $IncludeNullProperties) {
-                            if (-not ($Script:__ad_schema_info.ContainsKey($ObjClass))) {
+                        if ($IncludeAllProperties -or $IncludeNullProperties -and ($null -ne $ObjClass)) {
+                            if (-not (($Script:__ad_schema_info).ContainsKey($ObjClass))) {
                                 Write-Verbose "$($FunctionName): Storing schema attributes for $ObjClass for the first time"
                                 Write-Verbose "$($FunctionName): Object class being queried for in the schema = $objClass"
                                 ($Script:__ad_schema_info).$ObjClass = @(((Get-DSCurrentConnectedSchema).FindClass($objClass)).OptionalProperties).Name

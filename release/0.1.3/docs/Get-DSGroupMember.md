@@ -32,6 +32,13 @@ Get-DSGroupMember -Identity 'Domain Admins' -recurse -Properties *
 
 Retrieves all domain admin group members, including those within embedded groups along with all their properties.
 
+### -------------------------- EXAMPLE 2 --------------------------
+```
+get-dsgroup 'res_dept_*' | Get-DSGroupMember
+```
+
+Retrieves all immediate members of any group name starting with 'res_dept_'
+
 ## PARAMETERS
 
 ### -Recurse

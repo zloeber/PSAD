@@ -4,15 +4,15 @@ online version: https://github.com/zloeber/PSAD
 schema: 2.0.0
 ---
 
-# Get-DSGroupMember
+# Get-DSFineGrainPasswordPolicy
 
 ## SYNOPSIS
-Return all members of a group.
+Retrieve fine grained password policies.
 
 ## SYNTAX
 
 ```
-Get-DSGroupMember [-Recurse] [-Identity <String>] [-ComputerName <String>] [-Credential <PSCredential>]
+Get-DSFineGrainPasswordPolicy [-Identity <String>] [-ComputerName <String>] [-Credential <PSCredential>]
  [-Limit <Int32>] [-SearchRoot <String>] [-Filter <String[]>] [-BaseFilter <String>] [-Properties <String[]>]
  [-PageSize <Int32>] [-SearchScope <String>] [-SecurityMask <String[]>] [-TombStone] [-ChangeLogicOrder]
  [-ModifiedAfter <DateTime>] [-ModifiedBefore <DateTime>] [-CreatedAfter <DateTime>]
@@ -21,40 +21,18 @@ Get-DSGroupMember [-Recurse] [-Identity <String>] [-ComputerName <String>] [-Cre
 ```
 
 ## DESCRIPTION
-Return all members of a group.
+Retrieve fine grained password policies.
 
 ## EXAMPLES
 
 ### -------------------------- EXAMPLE 1 --------------------------
 ```
-Get-DSGroupMember -Identity 'Domain Admins' -recurse -Properties *
+Get-DSFineGrainPasswordPolicy
 ```
 
-Retrieves all domain admin group members, including those within embedded groups along with all their properties.
-
-### -------------------------- EXAMPLE 2 --------------------------
-```
-get-dsgroup 'res_dept_*' | Get-DSGroupMember
-```
-
-Retrieves all immediate members of any group name starting with 'res_dept_'
+Retrieve all fine grained password policies
 
 ## PARAMETERS
-
-### -Recurse
-Return all members of a group, even if they are in another group.
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: 
-
-Required: False
-Position: Named
-Default value: False
-Accept pipeline input: False
-Accept wildcard characters: False
-```
 
 ### -BaseFilter
 Immutable base ldap filter to use.

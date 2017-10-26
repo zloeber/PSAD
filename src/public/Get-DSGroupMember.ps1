@@ -10,6 +10,10 @@
     PS> Get-DSGroupMember -Identity 'Domain Admins' -recurse -Properties *
 
     Retrieves all domain admin group members, including those within embedded groups along with all their properties.
+    .EXAMPLE
+    PS> get-dsgroup 'res_dept_*' | Get-DSGroupMember
+
+    Retrieves all immediate members of any group name starting with 'res_dept_'
     .NOTES
     Author: Zachary Loeber
     .LINK
@@ -66,15 +70,22 @@
             $GetObjectParams.Properties = 'distinguishedname'
 
             try {
-                $GroupDN = (Get-DSGroup @GetObjectParams).distinguishedname
-                if ($Recurse) {
-                    $GetMemberParams.BaseFilter += "memberof:1.2.840.113556.1.4.1941:=$GroupDN"
+                if ($ID -like "CN=*") {
+                    $GroupDN = $ID
                 }
                 else {
-                    $GetMemberParams.BaseFilter += "memberof=$GroupDN"
+                    $GroupDN = (Get-DSGroup @GetObjectParams).distinguishedname
                 }
+                if ($null -ne $GroupDN) {
+                    if ($Recurse) {
+                        $GetMemberParams.BaseFilter = "memberof:1.2.840.113556.1.4.1941:=$GroupDN"
+                    }
+                    else {
+                        $GetMemberParams.BaseFilter = "memberof=$GroupDN"
+                    }
 
-                Get-DSObject @GetMemberParams
+                    Get-DSObject @GetMemberParams | Add-Member -MemberType 'noteproperty' -name 'Group' -Value $ID -PassThru
+                }
             }
             catch {
                 Write-Warning "$($FunctionName): Unable to find group with ID of $ID"

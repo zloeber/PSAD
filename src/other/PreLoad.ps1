@@ -147,6 +147,18 @@ Add-Type -TypeDefinition @"
 "@
 
 Add-Type -TypeDefinition @"
+[System.Flags]
+public enum DomainPwdPropertiesFlags {
+    RequireComplexPasswords = 0x0001,
+    DOMAIN_PASSWORD_NO_ANON_CHANGE = 0x0002,
+    DOMAIN_PASSWORD_NO_CLEAR_CHANGE = 0x0004,
+    DOMAIN_LOCKOUT_ADMINS = 0x0008,
+    StorePasswordsInClearText = 0x0010,
+    DOMAIN_REFUSE_PASSWORD_CHANGE = 0x0020
+}
+"@
+
+Add-Type -TypeDefinition @"
     [System.Flags]
     public enum nTDSSiteConnectionSettingsFlags {
         IS_GENERATED                  = 0x00000001,
@@ -215,6 +227,15 @@ $UACAttribs = @(
     'PASSWORD_EXPIRED',
     'TRUSTED_TO_AUTH_FOR_DELEGATION',
     'PARTIAL_SECRETS_ACCOUNT'
+)
+
+$PwdPropertyAttribs = @(
+    'RequireComplexPasswords',
+    'DOMAIN_PASSWORD_NO_ANON_CHANGE',
+    'DOMAIN_PASSWORD_NO_CLEAR_CHANGE',
+    'DOMAIN_LOCKOUT_ADMINS',
+    'StorePasswordsInClearText',
+    'DOMAIN_REFUSE_PASSWORD_CHANGE'
 )
 
 # Hash of different GUIDs for gpo settings
